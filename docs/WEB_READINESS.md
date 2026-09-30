@@ -20,7 +20,7 @@
 
 ## Gaps before a public web launch
 
-1. **Hosting and routing.** Choose static export (`npx expo export -p web`) and a host. Set `web.output` (`single` today; consider `static` for SEO pages).
+1. **Hosting and routing.** Done for the demo: static export (`npm run build:web`) deployed by Vercel from `main` at https://forgefive.vercel.app, with an SPA rewrite in `vercel.json`. Consider `web.output: static` later for SEO pages.
 2. **Classroom / presentation mode.** Ad-free by design, bigger type, and a "projector" layout. Not built yet.
 3. **Keyboard discoverability.** Show a small shortcuts legend on wide screens.
 4. **Tab order audit.** Verify logical order tray → bench → tools → actions with a screen reader (NVDA/ChromeVox).

@@ -8,7 +8,7 @@ Forge Five is an arithmetic puzzle game for iOS (first), Android and, later, the
 
 ## About this project
 
-**Play the web demo:** _link coming soon_ (works on phones and computers; nothing to install)
+**Play the web demo: [forgefive.vercel.app](https://forgefive.vercel.app)** (works on phones and computers; nothing to install)
 
 Forge Five is a cross-platform (iOS, Android, web) puzzle game built with React Native, Expo and TypeScript. Highlights worth a look:
 

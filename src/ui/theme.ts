@@ -1,3 +1,5 @@
+import { Platform } from 'react-native';
+
 /**
  * Forge Five design tokens.
  *
@@ -79,6 +81,9 @@ export const motion = {
   forge: 320,
   stamp: 360,
 } as const;
+
+/** Native-driven animations run off the JS thread on iOS/Android; the web has no native driver. */
+export const NATIVE_DRIVER = Platform.OS !== 'web';
 
 /** Minimum touch target (points). */
 export const TOUCH = 48;

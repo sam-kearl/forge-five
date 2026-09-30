@@ -1,14 +1,19 @@
 import { useEffect, useState } from 'react';
 import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
-import { fonts, motion, palette } from './theme';
+import { fonts, motion, palette, NATIVE_DRIVER } from './theme';
 
 /** A round brass seal that stamps down onto the proof when the puzzle is solved. */
 export function Seal({ reduce, size = 112 }: { reduce: boolean; size?: number }) {
   const t = useState(() => new Animated.Value(reduce ? 1 : 0))[0];
   useEffect(() => {
     if (reduce) return;
-    Animated.timing(t, { toValue: 1, duration: motion.stamp, easing: Easing.out(Easing.back(1.2)), useNativeDriver: true }).start();
+    Animated.timing(t, {
+      toValue: 1,
+      duration: motion.stamp,
+      easing: Easing.out(Easing.back(1.2)),
+      useNativeDriver: NATIVE_DRIVER,
+    }).start();
   }, [reduce, t]);
 
   const teeth = 20;

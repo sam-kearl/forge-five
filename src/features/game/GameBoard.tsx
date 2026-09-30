@@ -465,7 +465,8 @@ function useKeyboard(state: GameState, dispatch: (a: GameAction) => void) {
       d(id ? { type: 'insertPiece', pieceId: id } : { type: 'insertPiece', pieceId: `unavailable:${n}` });
     };
     const onKey = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement | null;
+      // Key events can target the window itself, so only treat real elements as targets.
+      const target = e.target instanceof HTMLElement ? e.target : null;
       if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
       const { state: s, dispatch: d } = ref.current;
       const k = e.key;

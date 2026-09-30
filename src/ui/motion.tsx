@@ -1,13 +1,18 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Animated, Easing, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
-import { motion, palette } from './theme';
+import { motion, palette, NATIVE_DRIVER } from './theme';
 
 /** Scale-and-fade in on mount. Instant when motion is reduced. */
 export function PopIn({ children, reduce, style }: { children: ReactNode; reduce: boolean; style?: StyleProp<ViewStyle> }) {
   const v = useState(() => new Animated.Value(reduce ? 1 : 0))[0];
   useEffect(() => {
     if (reduce) return;
-    Animated.timing(v, { toValue: 1, duration: motion.quick, easing: Easing.out(Easing.back(1.6)), useNativeDriver: true }).start();
+    Animated.timing(v, {
+      toValue: 1,
+      duration: motion.quick,
+      easing: Easing.out(Easing.back(1.6)),
+      useNativeDriver: NATIVE_DRIVER,
+    }).start();
   }, [reduce, v]);
   return (
     <Animated.View style={[style, { opacity: v, transform: [{ scale: v.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] }) }] }]}>
@@ -26,10 +31,10 @@ export function useShake(reduce: boolean) {
     if (reduce) return;
     x.setValue(0);
     Animated.sequence([
-      Animated.timing(x, { toValue: 6, duration: 45, useNativeDriver: true }),
-      Animated.timing(x, { toValue: -5, duration: 60, useNativeDriver: true }),
-      Animated.timing(x, { toValue: 3, duration: 50, useNativeDriver: true }),
-      Animated.timing(x, { toValue: 0, duration: 40, useNativeDriver: true }),
+      Animated.timing(x, { toValue: 6, duration: 45, useNativeDriver: NATIVE_DRIVER }),
+      Animated.timing(x, { toValue: -5, duration: 60, useNativeDriver: NATIVE_DRIVER }),
+      Animated.timing(x, { toValue: 3, duration: 50, useNativeDriver: NATIVE_DRIVER }),
+      Animated.timing(x, { toValue: 0, duration: 40, useNativeDriver: NATIVE_DRIVER }),
     ]).start();
   };
   return { style: { transform: [{ translateX: x }] }, shake };
@@ -50,7 +55,7 @@ export function ForgeBurst({ trigger, reduce }: { trigger: number; reduce: boole
       toValue: 1,
       duration: reduce ? 260 : motion.forge,
       easing: Easing.out(Easing.quad),
-      useNativeDriver: true,
+      useNativeDriver: NATIVE_DRIVER,
     }).start();
   }, [trigger, reduce, t]);
 
