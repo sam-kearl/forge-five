@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useId } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Polygon, Stop } from 'react-native-svg';
 import { fonts, palette } from './theme';
@@ -21,6 +21,10 @@ interface Props {
  * it never relies on colour alone.
  */
 function PieceShapeImpl({ label, look, width, selected, hot }: Props) {
+  // Gradient ids must be unique per piece: Safari mis-resolves duplicated ids when a piece re-renders.
+  const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
+  const ceramicId = `ceramic${uid}`;
+  const brassId = `brass${uid}`;
   const w = width;
   const h = Math.round(w * 0.88);
   const inset = 3;
@@ -35,7 +39,7 @@ function PieceShapeImpl({ label, look, width, selected, hot }: Props) {
     .map((p) => p.join(','))
     .join(' ');
 
-  const fill = look === 'forged' ? 'url(#brass)' : look === 'socket' ? 'transparent' : 'url(#ceramic)';
+  const fill = look === 'forged' ? `url(#${brassId})` : look === 'socket' ? 'transparent' : `url(#${ceramicId})`;
   const stroke = selected
     ? palette.ember
     : hot
@@ -52,13 +56,14 @@ function PieceShapeImpl({ label, look, width, selected, hot }: Props) {
 
   return (
     <View style={{ width: w, height: h }}>
-      <Svg width={w} height={h}>
+      {/* Keyed by look so the SVG is rebuilt (not patched) when a piece changes state. */}
+      <Svg key={look} width={w} height={h}>
         <Defs>
-          <LinearGradient id="ceramic" x1="0" y1="0" x2="0" y2="1">
+          <LinearGradient id={ceramicId} x1="0" y1="0" x2="0" y2="1">
             <Stop offset="0" stopColor={palette.chalk} />
             <Stop offset="1" stopColor={palette.ceramicShade} />
           </LinearGradient>
-          <LinearGradient id="brass" x1="0" y1="0" x2="1" y2="1">
+          <LinearGradient id={brassId} x1="0" y1="0" x2="1" y2="1">
             <Stop offset="0" stopColor="#F6DC8E" />
             <Stop offset="0.55" stopColor={palette.brass} />
             <Stop offset="1" stopColor="#CF9F45" />
