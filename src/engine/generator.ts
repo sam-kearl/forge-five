@@ -20,9 +20,7 @@ export function drawSourceValues(rng: Rng, config: GameConfig): number[] {
     .map(Number)
     .filter((n) => n >= config.sourceMin && n <= config.sourceMax);
   while (values.length < config.sourceCount) {
-    const v = rng.weightedPick(keys, (k) =>
-      (counts.get(k) ?? 0) >= config.generator.maxCopiesPerValue ? 0 : config.sourceWeights[k],
-    );
+    const v = rng.weightedPick(keys, (k) => ((counts.get(k) ?? 0) >= config.generator.maxCopiesPerValue ? 0 : config.sourceWeights[k]));
     values.push(v);
     counts.set(v, (counts.get(v) ?? 0) + 1);
   }

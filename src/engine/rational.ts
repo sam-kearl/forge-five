@@ -68,19 +68,13 @@ export const ZERO = int(0);
 export const ONE = int(1);
 
 export const add = (a: Rational, b: Rational): Rational =>
-  a.den === 1 && b.den === 1
-    ? int(checkSafe(a.num + b.num))
-    : frac(checkSafe(a.num * b.den + b.num * a.den), checkSafe(a.den * b.den));
+  a.den === 1 && b.den === 1 ? int(checkSafe(a.num + b.num)) : frac(checkSafe(a.num * b.den + b.num * a.den), checkSafe(a.den * b.den));
 
 export const sub = (a: Rational, b: Rational): Rational =>
-  a.den === 1 && b.den === 1
-    ? int(checkSafe(a.num - b.num))
-    : frac(checkSafe(a.num * b.den - b.num * a.den), checkSafe(a.den * b.den));
+  a.den === 1 && b.den === 1 ? int(checkSafe(a.num - b.num)) : frac(checkSafe(a.num * b.den - b.num * a.den), checkSafe(a.den * b.den));
 
 export const mul = (a: Rational, b: Rational): Rational =>
-  a.den === 1 && b.den === 1
-    ? int(checkSafe(a.num * b.num))
-    : frac(checkSafe(a.num * b.num), checkSafe(a.den * b.den));
+  a.den === 1 && b.den === 1 ? int(checkSafe(a.num * b.num)) : frac(checkSafe(a.num * b.num), checkSafe(a.den * b.den));
 
 /** Caller must ensure b is non-zero. */
 export function div(a: Rational, b: Rational): Rational {

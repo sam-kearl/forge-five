@@ -67,14 +67,16 @@ describe('parse errors', () => {
   it('reports an empty expression as incomplete', () => {
     expect(parseTokens([], () => undefined)).toEqual({ ok: false, error: { kind: 'empty', index: -1, incomplete: true } });
   });
-  it('reports a trailing operator as incomplete', () => expect(err('8 +')).toMatchObject({ kind: 'missing-operand', index: 1, incomplete: true }));
+  it('reports a trailing operator as incomplete', () =>
+    expect(err('8 +')).toMatchObject({ kind: 'missing-operand', index: 1, incomplete: true }));
   it('reports a leading operator', () => expect(err('× 8')).toMatchObject({ kind: 'missing-operand', index: 0, incomplete: false }));
   it('reports two operators in a row', () => expect(err('8 + × 4')).toMatchObject({ kind: 'missing-operand', index: 2 }));
   it('reports an operator before a closing bracket', () => expect(err('(8 + ) × 4')).toMatchObject({ kind: 'missing-operand', index: 2 }));
   it('reports numbers side by side', () => expect(err('8 4')).toMatchObject({ kind: 'missing-operator', index: 1 }));
   it('reports a number directly after a group', () => expect(err('(8 + 4) 2')).toMatchObject({ kind: 'missing-operator', index: 5 }));
   it('reports a group directly after a number', () => expect(err('8 (4 + 2)')).toMatchObject({ kind: 'missing-operator', index: 1 }));
-  it('reports an unclosed bracket as incomplete', () => expect(err('(8 + 4')).toMatchObject({ kind: 'unclosed', index: 0, incomplete: true }));
+  it('reports an unclosed bracket as incomplete', () =>
+    expect(err('(8 + 4')).toMatchObject({ kind: 'unclosed', index: 0, incomplete: true }));
   it('reports an extra closing bracket', () => expect(err('8 + 4)')).toMatchObject({ kind: 'extra-close', index: 3 }));
   it('reports empty brackets', () => expect(err('8 + ()')).toMatchObject({ kind: 'empty-parens', index: 2 }));
   it('reports unknown pieces', () => {
@@ -129,7 +131,15 @@ describe('formatting', () => {
       const e = exprOf(input, S);
       const again = exprOf(formatExpr(e), S);
       expect(value(again)).toBe(value(e));
-      expect(leaves(again).map((l) => l.sourceId).sort()).toEqual(leaves(e).map((l) => l.sourceId).sort());
+      expect(
+        leaves(again)
+          .map((l) => l.sourceId)
+          .sort(),
+      ).toEqual(
+        leaves(e)
+          .map((l) => l.sourceId)
+          .sort(),
+      );
     }
   });
 
@@ -163,12 +173,22 @@ describe('validateSolution', () => {
   });
   it('rejects an arbitrary constant', () => {
     const e = exprOf('(8 + 4 + 2) × 3 − 6', S);
-    const withConst = { kind: 'op' as const, op: 'add' as const, left: e, right: { kind: 'leaf' as const, sourceId: 'k', value: R.int(1) } };
+    const withConst = {
+      kind: 'op' as const,
+      op: 'add' as const,
+      left: e,
+      right: { kind: 'leaf' as const, sourceId: 'k', value: R.int(1) },
+    };
     const r = validateSolution(withConst, S, 37, RULES);
     expect(!r.ok && r.issues[0].kind).toBe('unknown-number');
   });
   it('rejects a leaf whose value does not match its piece', () => {
-    const e = { kind: 'op' as const, op: 'add' as const, left: { kind: 'leaf' as const, sourceId: 's0', value: R.int(9) }, right: exprOf('4 + 2 + 3 + 6', S) };
+    const e = {
+      kind: 'op' as const,
+      op: 'add' as const,
+      left: { kind: 'leaf' as const, sourceId: 's0', value: R.int(9) },
+      right: exprOf('4 + 2 + 3 + 6', S),
+    };
     const r = validateSolution(e, S, 24, RULES);
     expect(!r.ok && r.issues).toContainEqual({ kind: 'wrong-value', sourceId: 's0' });
   });

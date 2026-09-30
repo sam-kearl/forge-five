@@ -94,7 +94,11 @@ describe('generated puzzles', () => {
   it('give each source a unique permanent identity', () => {
     for (const { puzzle } of results) {
       expect(new Set(puzzle.sources.map((s) => s.id)).size).toBe(5);
-      expect(leaves(puzzle.witness).map((l) => l.sourceId).sort()).toEqual(puzzle.sources.map((s) => s.id).sort());
+      expect(
+        leaves(puzzle.witness)
+          .map((l) => l.sourceId)
+          .sort(),
+      ).toEqual(puzzle.sources.map((s) => s.id).sort());
     }
   });
 

@@ -26,9 +26,7 @@ export interface ParseError {
   incomplete: boolean;
 }
 
-export type ParseResult =
-  | { ok: true; expr: Expr; pieceIds: PieceId[] }
-  | { ok: false; error: ParseError };
+export type ParseResult = { ok: true; expr: Expr; pieceIds: PieceId[] } | { ok: false; error: ParseError };
 
 class Fail {
   constructor(readonly error: ParseError) {}

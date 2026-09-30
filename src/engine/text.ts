@@ -17,7 +17,10 @@ export interface AvailablePiece {
 
 export type TextTokenResult =
   | { ok: true; tokens: Token[] }
-  | { ok: false; error: { kind: 'unavailable-number'; value: number; offset: number } | { kind: 'unexpected-character'; char: string; offset: number } };
+  | {
+      ok: false;
+      error: { kind: 'unavailable-number'; value: number; offset: number } | { kind: 'unexpected-character'; char: string; offset: number };
+    };
 
 const OP_CHARS: Record<string, Op> = {
   '+': 'add',

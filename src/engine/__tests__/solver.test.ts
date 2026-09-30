@@ -54,7 +54,9 @@ describe('solver: known puzzles', () => {
   it('tracks duplicate faces as separate pieces', () => {
     const w = solve(items([6, 6, 1, 2, 3]), 25, RULES);
     expect(w).not.toBeNull();
-    const ids = leaves(w!).map((l) => l.sourceId).sort();
+    const ids = leaves(w!)
+      .map((l) => l.sourceId)
+      .sort();
     expect(ids).toEqual(['s0', 's1', 's2', 's3', 's4']);
   });
 });
@@ -91,7 +93,10 @@ describe('solver: agrees with an independent brute-force reference', () => {
     const full = [...solver.reach(solver.fullMask).keys()].sort();
     expect(full).toEqual([...ref].sort());
     expect(reachableTargets(items(vals), RULES, 1, 25)).toEqual(
-      [...ref].map(Number).filter((v) => v >= 1 && v <= 25).sort((a, b) => a - b),
+      [...ref]
+        .map(Number)
+        .filter((v) => v >= 1 && v <= 25)
+        .sort((a, b) => a - b),
     );
   });
 });
@@ -133,7 +138,12 @@ describe('solution enumeration', () => {
     expect(s.enumerate(R.int(12), 100)).toHaveLength(1);
     // …but both identities are still usable when the faces are needed separately.
     const w = createSolver(items([6, 6, 2]), RULES).solve(R.int(2));
-    expect(w && leaves(w).map((l) => l.sourceId).sort()).toEqual(['s0', 's1', 's2']);
+    expect(
+      w &&
+        leaves(w)
+          .map((l) => l.sourceId)
+          .sort(),
+    ).toEqual(['s0', 's1', 's2']);
   });
 });
 
@@ -146,7 +156,12 @@ describe('canonical form', () => {
   it('distinguishes genuinely different solutions', () => expect(k('8 + 4 × 2')).not.toBe(k('(8 + 4) × 2')));
   it('treats equal faces as interchangeable', () => {
     const d = mkSources([6, 6, 1]);
-    const e1 = { kind: 'op' as const, op: 'sub' as const, left: { kind: 'leaf' as const, sourceId: 's0', value: R.int(6) }, right: { kind: 'leaf' as const, sourceId: 's1', value: R.int(6) } };
+    const e1 = {
+      kind: 'op' as const,
+      op: 'sub' as const,
+      left: { kind: 'leaf' as const, sourceId: 's0', value: R.int(6) },
+      right: { kind: 'leaf' as const, sourceId: 's1', value: R.int(6) },
+    };
     const e2 = { ...e1, left: e1.right, right: e1.left };
     expect(canonicalKey(e1)).toBe(canonicalKey(e2));
     expect(d).toHaveLength(3);

@@ -4,6 +4,8 @@
  *
  *   npx tsx scripts/puzzle-report.ts [count] [startSeed]
  */
+declare const process: { argv: string[] };
+
 import { INITIAL_CONFIG } from '../src/engine/config';
 import { formatExpr } from '../src/engine/format';
 import { generatePuzzle } from '../src/engine/generator';
@@ -74,7 +76,9 @@ console.log(`Tiers: ${[...tiers].map(([k, v]) => `${k}: ${v}`).join(', ')}`);
 console.log(`Strategies: ${[...strategies].map(([k, v]) => `${k}: ${v}`).join(', ')}`);
 console.log(`Easiest effort: p10 ${q(efforts, 0.1)}, median ${q(efforts, 0.5)}, p90 ${q(efforts, 0.9)}`);
 console.log(`Distinct solutions: p10 ${q(solutionCounts, 0.1)}, median ${q(solutionCounts, 0.5)}, p90 ${q(solutionCounts, 0.9)}`);
-console.log(`Requires ÷ ${pct(requiresDiv)}, requires − ${pct(requiresSub)}, requires × ${pct(requiresMul)}, target among pieces ${pct(targetInSources)}`);
+console.log(
+  `Requires ÷ ${pct(requiresDiv)}, requires − ${pct(requiresSub)}, requires × ${pct(requiresMul)}, target among pieces ${pct(targetInSources)}`,
+);
 console.log(`\nRejections (all attempts):`);
 for (const [k, v] of Object.entries(rejections).sort((a, b) => b[1] - a[1])) console.log(`  ${k.padEnd(22)} ${v}`);
 console.log(`\nTargets:\n${hist(targets, 1, 25)}`);

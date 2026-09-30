@@ -158,31 +158,49 @@ export function createSolver(items: readonly SolverItem[], rules: RuleSet): Solv
         for (const op of OPS) {
           // a op b = target, with A on the left
           if (op === 'add') {
-            const y = lookup(rb, safe(() => R.sub(target, a)));
+            const y = lookup(
+              rb,
+              safe(() => R.sub(target, a)),
+            );
             if (y) tryPair('add', am, a, bm, y.value);
           } else if (op === 'mul') {
             if (R.isZero(a)) {
               if (R.isZero(target)) for (const y of rb.values()) tryPair('mul', am, a, bm, y.value);
             } else {
-              const y = lookup(rb, safe(() => R.div(target, a)));
+              const y = lookup(
+                rb,
+                safe(() => R.div(target, a)),
+              );
               if (y) tryPair('mul', am, a, bm, y.value);
             }
           } else if (op === 'sub') {
-            const y1 = lookup(rb, safe(() => R.sub(a, target))); // a − b = t
+            const y1 = lookup(
+              rb,
+              safe(() => R.sub(a, target)),
+            ); // a − b = t
             if (y1) tryPair('sub', am, a, bm, y1.value);
-            const y2 = lookup(rb, safe(() => R.add(target, a))); // b − a = t
+            const y2 = lookup(
+              rb,
+              safe(() => R.add(target, a)),
+            ); // b − a = t
             if (y2) tryPair('sub', bm, y2.value, am, a);
           } else {
             // a ÷ b = t
             if (R.isZero(target)) {
               if (R.isZero(a)) for (const y of rb.values()) if (!R.isZero(y.value)) tryPair('div', am, a, bm, y.value);
             } else {
-              const y1 = lookup(rb, safe(() => R.div(a, target)));
+              const y1 = lookup(
+                rb,
+                safe(() => R.div(a, target)),
+              );
               if (y1) tryPair('div', am, a, bm, y1.value);
             }
             // b ÷ a = t
             if (!R.isZero(a)) {
-              const y2 = lookup(rb, safe(() => R.mul(target, a)));
+              const y2 = lookup(
+                rb,
+                safe(() => R.mul(target, a)),
+              );
               if (y2) tryPair('div', bm, y2.value, am, a);
             }
           }
