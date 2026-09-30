@@ -48,7 +48,8 @@
           "image": "./assets/splash-icon.png",
           "imageWidth": 160
         }
-      ]
+      ],
+      "expo-asset"
     ],
     "scheme": "forgefive",
     "backgroundColor": "#161B24",
