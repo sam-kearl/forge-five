@@ -47,7 +47,9 @@
     "test": "jest",
     "test:engine": "jest src/engine",
     "typecheck": "tsc --noEmit",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "build:web": "expo export -p web",
+    "icons": "node scripts/make-icons.js"
   },
   "private": true,
   "jest": {
@@ -58,5 +60,10 @@
     "testPathIgnorePatterns": [
       "/node_modules/"
     ]
+  },
+  "license": "UNLICENSED",
+  "author": "Sam Kearl",
+  "engines": {
+    "node": "22.x"
   }
 }

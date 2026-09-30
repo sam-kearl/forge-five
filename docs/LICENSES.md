@@ -70,7 +70,7 @@ Most transitive packages are MIT, ISC, BSD or Apache-2.0. The exceptions below a
 |---|---|
 | Hex-nut pieces, blueprint target, seal stamp, logo mark, forge burst | Drawn in code (`src/ui/*`), original |
 | Line icons (undo, redo, spark, seal, gear…) | Drawn in code (`src/ui/Icon.tsx`), original. No icon library is used. |
-| App icon, splash and adaptive-icon PNGs in `assets/` | **Still the Expo template placeholders.** They must be replaced with original Forge Five artwork before release. |
+| App icon, splash, favicon and adaptive-icon PNGs in `assets/` | Original, rendered from the logo geometry by `scripts/make-icons.js` (no third-party artwork) |
 
 ## Native tooling installed on the development Mac (not shipped)
 

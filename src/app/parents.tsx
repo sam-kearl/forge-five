@@ -99,7 +99,9 @@ export default function Parents() {
           </View>
 
           {services.purchases.provider === 'mock' && (
-            <Text style={styles.devNote}>Development build: purchases are simulated and no money changes hands.</Text>
+            <Text style={styles.devNote}>
+              Demo build: the app store isn’t connected yet, so purchases are simulated and nothing is charged.
+            </Text>
           )}
         </View>
       )}

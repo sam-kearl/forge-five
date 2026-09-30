@@ -6,7 +6,7 @@ Tick every item for each release candidate. Items marked ⚖️ need professiona
 
 - [ ] Final name cleared ⚖️ (T1). App display name set in `app.json`.
 - [ ] Bundle id / package name replaced (`com.example.forgefive` is a placeholder).
-- [ ] **Original app icon, adaptive icon (foreground, background, monochrome), splash image and favicon.** The template PNGs are still in `assets/`.
+- [x] Original app icon, adaptive icon (foreground, background, monochrome), splash image and favicon (`npm run icons`). Consider a professional icon pass before launch.
 - [ ] Version and build numbers bumped (`version`, `ios.buildNumber`, `android.versionCode`).
 - [ ] Lexend OFL licence text included in the app's notices.
 - [ ] Store screenshots for small phone, large phone and iPad (portrait); descriptions with original marketing copy that never compares Forge Five to other games.
