@@ -112,6 +112,13 @@ export function AppProvider({ children, services: injected }: { children: ReactN
 
   useEffect(() => () => services.sound.dispose(), [services]);
 
+  // Warm up sound players shortly after launch, off the critical path.
+  useEffect(() => {
+    if (!ready || !settings.sound) return;
+    const t = setTimeout(() => services.sound.preload?.(), 1200);
+    return () => clearTimeout(t);
+  }, [ready, settings.sound, services]);
+
   const updateSettings = useCallback(
     (patch: Partial<Settings>) =>
       setSettings((prev) => {

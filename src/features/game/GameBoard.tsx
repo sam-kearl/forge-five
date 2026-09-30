@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AccessibilityInfo, Animated, Platform, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { analyzeBench, OP_SYMBOL, OP_WORD, recipeOf, selectionRange, type GameAction, type GameState, type Op } from '../../engine';
 import { ToolKey, Tap } from '../../ui/controls';
@@ -53,7 +53,9 @@ export function GameBoard({ state, dispatch, reduceMotion, highlight = [], compa
   const wide = width >= 900 && width > height * 1.15;
   const contentWidth = wide ? Math.min(540, Math.floor((width - space.lg * 3) / 2)) : Math.min(width - space.lg * 2, 640);
   const scale = Math.min(1.3, Math.max(1, contentWidth / 420));
-  const compactTarget = compact ?? (!wide && height < 760);
+  const hasForged = state.snap.tray.some((id) => state.snap.pieces[id].kind === 'forged');
+  // Compact the target on shorter phones, and while forged pieces take tray space, so the bench stays in view.
+  const compactTarget = compact ?? (!wide && (height < 760 || (hasForged && height < 940)));
   const trayGap = space.sm;
   const pieceW = Math.min(Math.round(76 * scale), Math.floor((contentWidth - trayGap * 4) / 5));
   const benchPieceW = Math.min(Math.round(54 * scale), Math.max(42, Math.floor(contentWidth / 8.2)));
@@ -144,21 +146,24 @@ export function GameBoard({ state, dispatch, reduceMotion, highlight = [], compa
                 >
                   <PieceShape label={pieceValueText(p)} look="forged" width={pieceW} />
                 </Tap>
-                <Text style={styles.recipe} numberOfLines={2} maxFontSizeMultiplier={1.3} importantForAccessibility="no">
-                  {recipeOf(p)}
-                </Text>
-                <Tap
-                  onPress={() => dispatch({ type: 'breakApart', pieceId: id })}
-                  accessibilityLabel={`Break apart forged ${pieceValueText(p)}`}
-                  style={styles.breakBtn}
-                >
-                  <View style={styles.breakInner}>
-                    <Icon name="split" size={14} color={palette.mist} />
-                    <Text style={styles.breakText} maxFontSizeMultiplier={1.3}>
-                      break
-                    </Text>
-                  </View>
-                </Tap>
+                {/* Recipe and break control sit beside the piece to keep the tray short. */}
+                <View style={styles.forgedInfo}>
+                  <Text style={styles.recipe} numberOfLines={2} maxFontSizeMultiplier={1.3} importantForAccessibility="no">
+                    {recipeOf(p)}
+                  </Text>
+                  <Tap
+                    onPress={() => dispatch({ type: 'breakApart', pieceId: id })}
+                    accessibilityLabel={`Break apart forged ${pieceValueText(p)}`}
+                    style={styles.breakBtn}
+                  >
+                    <View style={styles.breakInner}>
+                      <Icon name="split" size={14} color={palette.mist} />
+                      <Text style={styles.breakText} maxFontSizeMultiplier={1.3}>
+                        break
+                      </Text>
+                    </View>
+                  </Tap>
+                </View>
               </PopIn>
             );
           })}
@@ -213,7 +218,7 @@ export function GameBoard({ state, dispatch, reduceMotion, highlight = [], compa
     <>
       <FeedbackBanner message={feedback} />
       <View style={styles.toolRow}>
-        <View style={[styles.flex, hl('lparen') && styles.spotlight]}>
+        <Slot on={hl('lparen')}>
           <ToolKey
             height={keyH}
             symbol="("
@@ -222,8 +227,8 @@ export function GameBoard({ state, dispatch, reduceMotion, highlight = [], compa
             tone="blueprint"
             testID="key-lparen"
           />
-        </View>
-        <View style={[styles.flex, hl('rparen') && styles.spotlight]}>
+        </Slot>
+        <Slot on={hl('rparen')}>
           <ToolKey
             height={keyH}
             symbol=")"
@@ -232,9 +237,9 @@ export function GameBoard({ state, dispatch, reduceMotion, highlight = [], compa
             tone="blueprint"
             testID="key-rparen"
           />
-        </View>
+        </Slot>
         {OPS.map((op) => (
-          <View key={op} style={[styles.flex, hl(`op:${op}`) && styles.spotlight]}>
+          <Slot key={op} on={hl(`op:${op}`)}>
             <ToolKey
               height={keyH}
               symbol={OP_SYMBOL[op]}
@@ -242,33 +247,39 @@ export function GameBoard({ state, dispatch, reduceMotion, highlight = [], compa
               onPress={() => dispatch({ type: 'insertOp', op })}
               testID={`key-${op}`}
             />
-          </View>
+          </Slot>
         ))}
       </View>
       <View style={styles.toolRow}>
-        <ToolKey
-          height={keyH}
-          icon="left"
-          label="Move cursor left"
-          onPress={() => dispatch({ type: 'moveCursor', to: snap.cursor - 1 })}
-          disabled={snap.cursor === 0}
-        />
-        <ToolKey
-          height={keyH}
-          icon="right"
-          label="Move cursor right"
-          onPress={() => dispatch({ type: 'moveCursor', to: snap.cursor + 1 })}
-          disabled={snap.cursor >= snap.bench.length}
-        />
-        <ToolKey
-          height={keyH}
-          icon="backspace"
-          label={range ? 'Remove selection' : 'Delete'}
-          onPress={() => dispatch({ type: 'backspace' })}
-          disabled={!range && snap.cursor === 0}
-          testID="key-backspace"
-        />
-        <View style={[styles.flex, hl('undo') && styles.spotlight]}>
+        <Slot on={hl('left')}>
+          <ToolKey
+            height={keyH}
+            icon="left"
+            label="Move cursor left"
+            onPress={() => dispatch({ type: 'moveCursor', to: snap.cursor - 1 })}
+            disabled={snap.cursor === 0}
+          />
+        </Slot>
+        <Slot on={hl('right')}>
+          <ToolKey
+            height={keyH}
+            icon="right"
+            label="Move cursor right"
+            onPress={() => dispatch({ type: 'moveCursor', to: snap.cursor + 1 })}
+            disabled={snap.cursor >= snap.bench.length}
+          />
+        </Slot>
+        <Slot on={hl('backspace')}>
+          <ToolKey
+            height={keyH}
+            icon="backspace"
+            label={range ? 'Remove selection' : 'Delete'}
+            onPress={() => dispatch({ type: 'backspace' })}
+            disabled={!range && snap.cursor === 0}
+            testID="key-backspace"
+          />
+        </Slot>
+        <Slot on={hl('undo')}>
           <ToolKey
             height={keyH}
             icon="undo"
@@ -277,22 +288,26 @@ export function GameBoard({ state, dispatch, reduceMotion, highlight = [], compa
             disabled={state.past.length === 0}
             testID="key-undo"
           />
-        </View>
-        <ToolKey
-          height={keyH}
-          icon="redo"
-          label="Redo"
-          onPress={() => dispatch({ type: 'redo' })}
-          disabled={state.future.length === 0}
-          testID="key-redo"
-        />
-        <ToolKey
-          height={keyH}
-          icon="clear"
-          label="Clear bench and restore all pieces"
-          onPress={() => dispatch({ type: 'clear' })}
-          testID="key-clear"
-        />
+        </Slot>
+        <Slot on={hl('redo')}>
+          <ToolKey
+            height={keyH}
+            icon="redo"
+            label="Redo"
+            onPress={() => dispatch({ type: 'redo' })}
+            disabled={state.future.length === 0}
+            testID="key-redo"
+          />
+        </Slot>
+        <Slot on={hl('clear')}>
+          <ToolKey
+            height={keyH}
+            icon="clear"
+            label="Clear bench and restore all pieces"
+            onPress={() => dispatch({ type: 'clear' })}
+            testID="key-clear"
+          />
+        </Slot>
       </View>
       <View style={styles.actionRow}>
         <Tap
@@ -361,6 +376,11 @@ export function GameBoard({ state, dispatch, reduceMotion, highlight = [], compa
       <View style={[styles.tools, { width: contentWidth }]}>{toolsArea}</View>
     </View>
   );
+}
+
+/** An equal-width cell in a tool row; draws the tutorial spotlight when `on`. */
+function Slot({ on, children }: { on: boolean; children: ReactNode }) {
+  return <View style={[styles.slot, on && styles.spotlight]}>{children}</View>;
 }
 
 function pieceValueTextFromAnalysis(a: ReturnType<typeof analyzeBench>) {
@@ -517,13 +537,14 @@ const styles = StyleSheet.create({
   slotNote: { fontFamily: fonts.medium, fontSize: 11, color: palette.mist, height: 15, marginTop: 1 },
   spotlight: { borderRadius: radius.md, borderWidth: 3, borderColor: palette.ember },
   forgedRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space.md, justifyContent: 'center' },
-  forgedItem: { alignItems: 'center', maxWidth: 120 },
-  recipe: { fontFamily: fonts.medium, fontSize: 12, color: palette.brass, textAlign: 'center', marginTop: 2 },
-  breakBtn: { minHeight: 32, marginTop: 2, borderRadius: radius.pill, paddingHorizontal: space.sm },
-  breakInner: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 32 },
+  forgedItem: { flexDirection: 'row', alignItems: 'center', gap: space.sm, maxWidth: 260 },
+  forgedInfo: { alignItems: 'flex-start', flexShrink: 1 },
+  recipe: { fontFamily: fonts.semibold, fontSize: 14, color: palette.brass },
+  breakBtn: { minHeight: 36, minWidth: 0, borderRadius: radius.pill, paddingHorizontal: space.xs },
+  breakInner: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 36 },
   breakText: { fontFamily: fonts.medium, fontSize: 12, color: palette.mist },
   bench: {
-    minHeight: 104,
+    minHeight: 92,
     backgroundColor: palette.ceramic,
     borderTopLeftRadius: radius.lg,
     borderTopRightRadius: radius.lg,
@@ -572,6 +593,7 @@ const styles = StyleSheet.create({
   },
   bannerText: { fontFamily: fonts.medium, fontSize: 14, color: palette.chalk, flexShrink: 1, lineHeight: 19 },
   toolRow: { flexDirection: 'row', gap: space.xs + 2 },
+  slot: { flex: 1, minWidth: 0 },
   actionRow: { flexDirection: 'row', gap: space.sm, marginTop: space.xs },
   action: { flex: 1, minHeight: 56, borderRadius: radius.lg, justifyContent: 'center', borderBottomWidth: 4 },
   forgeAction: { backgroundColor: palette.flux, borderBottomColor: '#B8431F' },

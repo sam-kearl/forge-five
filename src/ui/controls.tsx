@@ -79,7 +79,6 @@ export function ToolKey({
   label,
   onPress,
   disabled,
-  wide,
   tone = 'steel',
   testID,
   height = 52,
@@ -89,7 +88,6 @@ export function ToolKey({
   label: string;
   onPress: () => void;
   disabled?: boolean;
-  wide?: boolean;
   tone?: 'steel' | 'blueprint';
   testID?: string;
   height?: number;
@@ -100,7 +98,7 @@ export function ToolKey({
       onPress={onPress}
       disabled={disabled}
       accessibilityLabel={label}
-      style={[styles.key, { height }, wide && { flex: 1.4 }, tone === 'blueprint' && styles.keyBlueprint]}
+      style={[styles.key, { height }, tone === 'blueprint' && styles.keyBlueprint]}
     >
       <View style={styles.keyInner}>
         {symbol ? (
@@ -183,7 +181,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
   },
   key: {
-    flex: 1,
+    alignSelf: 'stretch',
     height: 52,
     borderRadius: radius.md,
     backgroundColor: palette.steelHi,

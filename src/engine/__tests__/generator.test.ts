@@ -8,7 +8,8 @@ import * as R from '../rational';
 import { createRng } from '../rng';
 import { solve } from '../solver';
 import { validateSolution } from '../validate';
-import { mkSources, RULES } from './helpers';
+import { formatExpr } from '../format';
+import { exprOf, mkSources, RULES } from './helpers';
 
 const C = INITIAL_CONFIG;
 
@@ -127,6 +128,15 @@ describe('generated puzzles', () => {
       const sig = signatureOf(results[i].puzzle);
       const window = results.slice(Math.max(0, i - 30), i).map((r) => signatureOf(r.puzzle));
       expect(window.some((w) => isNearDuplicate(sig, w))).toBe(false);
+    }
+  });
+
+  it('print proofs that re-parse into valid solutions (formatter round trip)', () => {
+    for (const { puzzle } of results) {
+      for (const e of [puzzle.witness, puzzle.easiest]) {
+        const reparsed = exprOf(formatExpr(e), [...puzzle.sources]);
+        expect(validateSolution(reparsed, puzzle.sources, puzzle.target, RULES).ok).toBe(true);
+      }
     }
   });
 

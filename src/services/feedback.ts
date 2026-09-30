@@ -8,6 +8,8 @@ export type HapticCue = 'select' | 'forge' | 'invalid' | 'success';
 
 export interface SoundService {
   play(cue: SoundCue): void;
+  /** Create players ahead of time so the first tap never waits on audio setup. */
+  preload?(): void;
   dispose(): void;
 }
 

@@ -41,8 +41,16 @@ export function createExpoSound(): SoundService {
           setAudioModeAsync({ playsInSilentMode: false, interruptionMode: 'mixWithOthers' }).catch(() => {});
         }
         const p = get(cue);
-        p.seekTo(0).catch(() => {});
+        // Rewind only a player that has already played; seeking a fresh player is unnecessary.
+        if (p.currentTime > 0) p.seekTo(0).catch(() => {});
         p.play();
+      } catch {
+        // Ignore — audio is optional.
+      }
+    },
+    preload() {
+      try {
+        (Object.keys(SOURCES) as SoundCue[]).forEach(get);
       } catch {
         // Ignore — audio is optional.
       }
