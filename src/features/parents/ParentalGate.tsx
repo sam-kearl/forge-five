@@ -7,7 +7,7 @@ import { initialGate, pressDigit } from './gate';
 /** Adult check shown before purchases, restore and anything that leaves the app. */
 export function ParentalGate({ onPass }: { onPass: () => void }) {
   const [gate, setGate] = useState(() => initialGate());
-  const [now, setNow] = useState(Date.now());
+  const [now, setNow] = useState(() => Date.now());
   const keypad = useMemo(() => [1, 2, 3, 4, 5, 6, 7, 8, 9, 0], []);
   const locked = gate.lockedUntil !== null && now < gate.lockedUntil;
 

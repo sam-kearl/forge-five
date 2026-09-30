@@ -1,10 +1,10 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Animated, Easing, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { motion, palette } from './theme';
 
 /** Scale-and-fade in on mount. Instant when motion is reduced. */
 export function PopIn({ children, reduce, style }: { children: ReactNode; reduce: boolean; style?: StyleProp<ViewStyle> }) {
-  const v = useRef(new Animated.Value(reduce ? 1 : 0)).current;
+  const v = useState(() => new Animated.Value(reduce ? 1 : 0))[0];
   useEffect(() => {
     if (reduce) return;
     Animated.timing(v, { toValue: 1, duration: motion.quick, easing: Easing.out(Easing.back(1.6)), useNativeDriver: true }).start();
@@ -21,7 +21,7 @@ export function PopIn({ children, reduce, style }: { children: ReactNode; reduce
  * short swings (no flashing). Returns an Animated style and a trigger.
  */
 export function useShake(reduce: boolean) {
-  const x = useRef(new Animated.Value(0)).current;
+  const x = useState(() => new Animated.Value(0))[0];
   const shake = () => {
     if (reduce) return;
     x.setValue(0);
@@ -42,7 +42,7 @@ const SPARKS = 8;
  * over in ~320 ms. With reduced motion it becomes a brief brass glow.
  */
 export function ForgeBurst({ trigger, reduce }: { trigger: number; reduce: boolean }) {
-  const t = useRef(new Animated.Value(1)).current;
+  const t = useState(() => new Animated.Value(1))[0];
   useEffect(() => {
     if (trigger === 0) return;
     t.setValue(0);

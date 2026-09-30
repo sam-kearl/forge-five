@@ -2,7 +2,7 @@ import { applyOp, OPS, type Op } from './arithmetic';
 import { INITIAL_CONFIG, type GameConfig, type QualityThresholds } from './config';
 import { leaf, node, type Expr } from './expr';
 import { sourcePiece, type SourcePiece } from './pieces';
-import { isNearDuplicate, puzzleIdForSeed, signatureOf, type GenerationStrategy, type Puzzle, type PuzzleSignature } from './puzzle';
+import { isNearDuplicate, puzzleIdForSeed, type GenerationStrategy, type Puzzle, type PuzzleSignature } from './puzzle';
 import { evaluatePuzzle, type RejectionReason } from './quality';
 import * as R from './rational';
 import { createRng, type Rng } from './rng';
@@ -252,5 +252,3 @@ export function generatePuzzle(options: GenerateOptions): GenerationResult {
   }
   throw new Error('No valid puzzle could be produced, including fallbacks — configuration is inconsistent.');
 }
-
-export { signatureOf };

@@ -17,10 +17,7 @@ export function AdSlot({ placement, solvedCount }: { placement: AdPlacement; sol
   const [reported, setReported] = useState(false);
 
   useEffect(() => {
-    if (!allowed) {
-      setAd(null);
-      return;
-    }
+    if (!allowed) return; // nothing renders when not allowed, so no state reset is needed
     let alive = true;
     services.ads
       .load(placement)

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { router } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 import { AdSlot } from '../features/ads/AdSlot';
@@ -11,7 +12,8 @@ import { fonts, palette, radius, space } from '../ui/theme';
 
 export default function Home() {
   const { stats, tutorialCompleted } = useApp();
-  const streak = visibleStreak(stats, localDay(Date.now()));
+  const [today] = useState(() => localDay(Date.now()));
+  const streak = visibleStreak(stats, today);
 
   return (
     <Screen maxWidth={520}>

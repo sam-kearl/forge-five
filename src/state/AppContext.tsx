@@ -186,7 +186,9 @@ export function AppProvider({ children, services: injected }: { children: ReactN
   );
 
   const settingsRef = useRef(settings);
-  settingsRef.current = settings;
+  useEffect(() => {
+    settingsRef.current = settings;
+  }, [settings]);
   const cue = useCallback(
     (sound?: SoundCue, haptic?: HapticCue) => {
       if (sound && settingsRef.current.sound) services.sound.play(sound);

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { AccessibilityInfo, Animated, Platform, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { analyzeBench, OP_SYMBOL, OP_WORD, recipeOf, selectionRange, type GameAction, type GameState, type Op } from '../../engine';
 import { ToolKey, Tap } from '../../ui/controls';
@@ -69,14 +69,14 @@ export function GameBoard({ state, dispatch, reduceMotion, highlight = [], compa
   const hl = (k: ControlKey) => highlight.includes(k);
 
   // Announce feedback to screen readers and animate forge/invalid moments.
-  const [burst, setBurst] = useState(0);
+  // Each forge gets a new feedbackSeq, which re-triggers the burst animation.
+  const burst = state.feedback?.kind === 'forged' ? state.feedbackSeq : 0;
   const { style: shakeStyle, shake } = useShake(reduceMotion);
   const lastSeq = useRef(state.feedbackSeq);
   useEffect(() => {
     if (state.feedbackSeq === lastSeq.current) return;
     lastSeq.current = state.feedbackSeq;
     if (feedback) AccessibilityInfo.announceForAccessibility(feedback.text);
-    if (state.feedback?.kind === 'forged') setBurst((b) => b + 1);
     if (feedback?.tone === 'issue') shake();
   }, [state.feedbackSeq]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -450,7 +450,9 @@ function FeedbackBanner({ message }: { message: Message | null }) {
 
 function useKeyboard(state: GameState, dispatch: (a: GameAction) => void) {
   const ref = useRef({ state, dispatch });
-  ref.current = { state, dispatch };
+  useEffect(() => {
+    ref.current = { state, dispatch };
+  });
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') return;
     let digits = '';

@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { AccessibilityInfo, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { gameReducer, type GameAction, type GameState } from '../engine';
@@ -17,14 +17,11 @@ export default function Tutorial() {
   const [state, setState] = useState<GameState>(() => createTutorialGame(Date.now()));
   const [stepIndex, setStepIndex] = useState(0);
   const [hint, setHint] = useState<string | null>(null);
-  const stateRef = useRef(state);
-  stateRef.current = state;
   const step = TUTORIAL_STEPS[Math.min(stepIndex, TUTORIAL_STEPS.length - 1)];
   const finished = state.status === 'solved';
 
   useEffect(() => {
     AccessibilityInfo.announceForAccessibility(`${step.title}. ${step.body}`);
-    setHint(null);
   }, [stepIndex]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Solving the tutorial puzzle counts as completing it, even if the player then leaves.
@@ -32,10 +29,15 @@ export default function Tutorial() {
     if (finished) setTutorialCompleted(true);
   }, [finished, setTutorialCompleted]);
 
+  const advance = useCallback(() => {
+    setHint(null);
+    setStepIndex((i) => i + 1);
+  }, []);
+
   const dispatch = useCallback(
     (a: GameAction) => {
-      const s = stateRef.current;
-      // Selection and cursor moves are harmless; everything else must match the step.
+      const s = state;
+      // Only the move the current step asks for is accepted.
       const current = TUTORIAL_STEPS[stepIndex];
       if (!current?.expects || !current.expects(a, s)) {
         setHint(OFF_SCRIPT_HINT);
@@ -50,9 +52,9 @@ export default function Tutorial() {
       const c = cuesFor(s, next, a);
       cue(c.sound, c.haptic);
       setState(next);
-      setStepIndex((i) => i + 1);
+      advance();
     },
-    [stepIndex, cue],
+    [state, stepIndex, cue, advance],
   );
 
   const finish = () => {
@@ -110,7 +112,7 @@ export default function Tutorial() {
               </Text>
               {hint && <Text style={styles.hint}>{hint}</Text>}
             </View>
-            {!step.expects && <Button title="Next" onPress={() => setStepIndex((i) => i + 1)} style={styles.next} testID="tutorial-next" />}
+            {!step.expects && <Button title="Next" onPress={advance} style={styles.next} testID="tutorial-next" />}
           </View>
           <GameBoard state={state} dispatch={dispatch} reduceMotion={reduceMotion} highlight={step.highlight(state)} compact />
         </>

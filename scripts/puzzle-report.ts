@@ -4,12 +4,12 @@
  *
  *   npx tsx scripts/puzzle-report.ts [count] [startSeed]
  */
-declare const process: { argv: string[] };
-
 import { INITIAL_CONFIG } from '../src/engine/config';
 import { formatExpr } from '../src/engine/format';
 import { generatePuzzle } from '../src/engine/generator';
 import { signatureOf, type PuzzleSignature } from '../src/engine/puzzle';
+
+declare const process: { argv: string[] };
 
 const count = Number(process.argv[2] ?? 300);
 const start = Number(process.argv[3] ?? 1);

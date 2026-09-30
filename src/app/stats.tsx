@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { OP_SYMBOL, OP_WORD, type Op } from '../engine';
 import { useApp } from '../state/AppContext';
@@ -13,7 +14,8 @@ function fmtTime(ms: number | null): string {
 
 export default function Stats() {
   const { stats } = useApp();
-  const streak = visibleStreak(stats, localDay(Date.now()));
+  const [today] = useState(() => localDay(Date.now()));
+  const streak = visibleStreak(stats, today);
   const fav = favouriteTool(stats);
   const maxUse = Math.max(1, ...Object.values(stats.toolUse));
 
