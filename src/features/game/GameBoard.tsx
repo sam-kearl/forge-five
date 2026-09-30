@@ -48,11 +48,16 @@ const OPS: Op[] = ['add', 'sub', 'mul', 'div'];
 
 export function GameBoard({ state, dispatch, reduceMotion, highlight = [], compact }: GameBoardProps) {
   const { width, height } = useWindowDimensions();
-  const compactTarget = compact ?? height < 760;
-  const contentWidth = Math.min(width - space.lg * 2, 600);
+  // Wide, landscape screens (tablets sideways, Chromebooks, desktop browsers) get two columns
+  // instead of a stretched phone layout.
+  const wide = width >= 900 && width > height * 1.15;
+  const contentWidth = wide ? Math.min(540, Math.floor((width - space.lg * 3) / 2)) : Math.min(width - space.lg * 2, 640);
+  const scale = Math.min(1.3, Math.max(1, contentWidth / 420));
+  const compactTarget = compact ?? (!wide && height < 760);
   const trayGap = space.sm;
-  const pieceW = Math.min(76, Math.floor((contentWidth - trayGap * 4) / 5));
-  const benchPieceW = Math.min(54, Math.max(42, Math.floor(contentWidth / 8.2)));
+  const pieceW = Math.min(Math.round(76 * scale), Math.floor((contentWidth - trayGap * 4) / 5));
+  const benchPieceW = Math.min(Math.round(54 * scale), Math.max(42, Math.floor(contentWidth / 8.2)));
+  const keyH = Math.round(52 * scale);
   const { snap, puzzle } = state;
 
   const analysis = useMemo(() => analyzeBench(state), [state.snap, state.puzzle]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -83,225 +88,277 @@ export function GameBoard({ state, dispatch, reduceMotion, highlight = [], compa
   };
   const forgedInTray = snap.tray.filter((id) => snap.pieces[id].kind === 'forged');
 
-  return (
-    <View style={styles.root}>
-      <ScrollView style={styles.flex} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-        <View style={[styles.column, { width: contentWidth }]}>
-          <TargetBlueprint target={puzzle.target} width={contentWidth} compact={compactTarget} />
+  const trayArea = (
+    <>
+      <TargetBlueprint target={puzzle.target} width={contentWidth} compact={compactTarget} />
 
-          {/* Source tray: five fixed slots, so identical values keep distinct positions. */}
-          <View style={styles.trayHeader}>
-            <Text style={styles.caption} maxFontSizeMultiplier={1.4}>
-              Pieces
-            </Text>
-            <Text style={styles.captionMuted} maxFontSizeMultiplier={1.4} accessibilityLabel={trayA11ySummary(state)}>
-              use each once
-            </Text>
-          </View>
-          <View style={[styles.trayRow, { gap: trayGap }]}>
-            {puzzle.sources.map((s) => {
-              const where = sourceStatus(s.id);
-              const available = where === 'tray';
-              const label = pieceA11yLabel(state, s.id);
-              return (
-                <View key={s.id} style={{ alignItems: 'center', width: pieceW }}>
-                  <Tap
-                    testID={`tray-${s.id}`}
-                    onPress={() => dispatch({ type: 'insertPiece', pieceId: s.id })}
-                    disabled={!available}
-                    accessibilityLabel={
-                      available ? label : `${label}, ${where === 'bench' ? 'in the equation' : 'forged into another piece'}`
-                    }
-                    accessibilityHint={available ? 'Places this number on the bench' : undefined}
-                    style={[styles.pieceTap, hl(`piece:${s.id}`) && styles.spotlight]}
-                  >
-                    <PieceShape label={pieceValueText(s)} look={available ? 'source' : 'socket'} width={pieceW} />
-                  </Tap>
-                  <Text style={styles.slotNote} maxFontSizeMultiplier={1.2} importantForAccessibility="no">
-                    {available ? ' ' : where === 'bench' ? 'placed' : 'forged'}
-                  </Text>
-                </View>
-              );
-            })}
-          </View>
-
-          {forgedInTray.length > 0 && (
-            <View style={styles.forgedRow} accessibilityLabel="Forged pieces">
-              {forgedInTray.map((id) => {
-                const p = snap.pieces[id];
-                if (p.kind !== 'forged') return null;
-                return (
-                  <PopIn key={id} reduce={reduceMotion} style={styles.forgedItem}>
-                    <Tap
-                      testID={`tray-${id}`}
-                      onPress={() => dispatch({ type: 'insertPiece', pieceId: id })}
-                      accessibilityLabel={pieceA11yLabel(state, id)}
-                      accessibilityHint="Places this forged piece on the bench"
-                      accessibilityActions={[{ name: 'breakApart', label: 'Break apart' }]}
-                      onAccessibilityAction={(e) =>
-                        e.nativeEvent.actionName === 'breakApart' && dispatch({ type: 'breakApart', pieceId: id })
-                      }
-                      style={[styles.pieceTap, hl('forged') && styles.spotlight]}
-                    >
-                      <PieceShape label={pieceValueText(p)} look="forged" width={pieceW} />
-                    </Tap>
-                    <Text style={styles.recipe} numberOfLines={2} maxFontSizeMultiplier={1.3} importantForAccessibility="no">
-                      {recipeOf(p)}
-                    </Text>
-                    <Tap
-                      onPress={() => dispatch({ type: 'breakApart', pieceId: id })}
-                      accessibilityLabel={`Break apart forged ${pieceValueText(p)}`}
-                      style={styles.breakBtn}
-                    >
-                      <View style={styles.breakInner}>
-                        <Icon name="split" size={14} color={palette.mist} />
-                        <Text style={styles.breakText} maxFontSizeMultiplier={1.3}>
-                          break
-                        </Text>
-                      </View>
-                    </Tap>
-                  </PopIn>
-                );
-              })}
-            </View>
-          )}
-
-          {/* The workbench */}
-          <Animated.View style={shakeStyle}>
-            <Pressable onPress={() => dispatch({ type: 'moveCursor', to: snap.bench.length })} accessible={false} style={styles.bench}>
-              <View
-                style={styles.benchTokens}
-                accessible
-                accessibilityLabel={`${spokenBench(snap)} ${analysis.kind === 'value' ? `Current value ${pieceValueTextFromAnalysis(analysis)}.` : ''}`}
-                accessibilityHint="Use the tools below to edit. Tap a token to select it."
+      {/* Source tray: five fixed slots, so identical values keep distinct positions. */}
+      <View style={styles.trayHeader}>
+        <Text style={styles.caption} maxFontSizeMultiplier={1.4}>
+          Pieces
+        </Text>
+        <Text style={styles.captionMuted} maxFontSizeMultiplier={1.4} accessibilityLabel={trayA11ySummary(state)}>
+          use each once
+        </Text>
+      </View>
+      <View style={[styles.trayRow, { gap: trayGap }]}>
+        {puzzle.sources.map((s) => {
+          const where = sourceStatus(s.id);
+          const available = where === 'tray';
+          const label = pieceA11yLabel(state, s.id);
+          return (
+            <View key={s.id} style={{ alignItems: 'center', width: pieceW }}>
+              <Tap
+                testID={`tray-${s.id}`}
+                onPress={() => dispatch({ type: 'insertPiece', pieceId: s.id })}
+                disabled={!available}
+                accessibilityLabel={available ? label : `${label}, ${where === 'bench' ? 'in the equation' : 'forged into another piece'}`}
+                accessibilityHint={available ? 'Places this number on the bench' : undefined}
+                style={[styles.pieceTap, hl(`piece:${s.id}`) && styles.spotlight]}
               >
-                {snap.bench.length === 0 && (
-                  <Text style={styles.benchEmpty} maxFontSizeMultiplier={1.4}>
-                    Your equation takes shape here
-                  </Text>
-                )}
-                {snap.bench.map((t, i) => {
-                  const selected = !!range && i >= range[0] && i <= range[1];
-                  return (
-                    <View key={t.id} style={styles.tokenWrap}>
-                      {snap.cursor === i && <Cursor />}
-                      <PopIn reduce={reduceMotion}>
-                        <Tap
-                          testID={`bench-${i}`}
-                          onPress={() => dispatch({ type: 'tapToken', index: i })}
-                          selected={selected}
-                          accessibilityLabel={`${spokenToken(snap, t)}, position ${i + 1} of ${snap.bench.length}${selected ? ', selected' : ''}`}
-                          accessibilityHint="Selects this token. Tap another token to extend the selection."
-                          style={[styles.token, selected && styles.tokenSelected]}
-                        >
-                          <TokenFace state={state} index={i} benchPieceW={benchPieceW} selected={selected} />
-                        </Tap>
-                      </PopIn>
-                    </View>
-                  );
-                })}
-                {snap.cursor === snap.bench.length && snap.bench.length > 0 && <Cursor />}
-              </View>
-              <ForgeBurst trigger={burst} reduce={reduceMotion} />
-            </Pressable>
-            <Readout message={readout} />
-          </Animated.View>
-        </View>
-      </ScrollView>
+                <PieceShape label={pieceValueText(s)} look={available ? 'source' : 'socket'} width={pieceW} />
+              </Tap>
+              <Text style={styles.slotNote} maxFontSizeMultiplier={1.2} importantForAccessibility="no">
+                {available ? ' ' : where === 'bench' ? 'placed' : 'forged'}
+              </Text>
+            </View>
+          );
+        })}
+      </View>
 
-      {/* Tools stay anchored at the bottom so they never move while the bench grows. */}
-      <View style={[styles.tools, { width: contentWidth }]}>
-        <FeedbackBanner message={feedback} />
-        <View style={styles.toolRow}>
+      {forgedInTray.length > 0 && (
+        <View style={styles.forgedRow} accessibilityLabel="Forged pieces">
+          {forgedInTray.map((id) => {
+            const p = snap.pieces[id];
+            if (p.kind !== 'forged') return null;
+            return (
+              <PopIn key={id} reduce={reduceMotion} style={styles.forgedItem}>
+                <Tap
+                  testID={`tray-${id}`}
+                  onPress={() => dispatch({ type: 'insertPiece', pieceId: id })}
+                  accessibilityLabel={pieceA11yLabel(state, id)}
+                  accessibilityHint="Places this forged piece on the bench"
+                  accessibilityActions={[{ name: 'breakApart', label: 'Break apart' }]}
+                  onAccessibilityAction={(e) => e.nativeEvent.actionName === 'breakApart' && dispatch({ type: 'breakApart', pieceId: id })}
+                  style={[styles.pieceTap, hl('forged') && styles.spotlight]}
+                >
+                  <PieceShape label={pieceValueText(p)} look="forged" width={pieceW} />
+                </Tap>
+                <Text style={styles.recipe} numberOfLines={2} maxFontSizeMultiplier={1.3} importantForAccessibility="no">
+                  {recipeOf(p)}
+                </Text>
+                <Tap
+                  onPress={() => dispatch({ type: 'breakApart', pieceId: id })}
+                  accessibilityLabel={`Break apart forged ${pieceValueText(p)}`}
+                  style={styles.breakBtn}
+                >
+                  <View style={styles.breakInner}>
+                    <Icon name="split" size={14} color={palette.mist} />
+                    <Text style={styles.breakText} maxFontSizeMultiplier={1.3}>
+                      break
+                    </Text>
+                  </View>
+                </Tap>
+              </PopIn>
+            );
+          })}
+        </View>
+      )}
+    </>
+  );
+
+  const benchArea = (
+    <Animated.View style={shakeStyle}>
+      <Pressable onPress={() => dispatch({ type: 'moveCursor', to: snap.bench.length })} accessible={false} style={styles.bench}>
+        <View
+          style={styles.benchTokens}
+          accessible
+          accessibilityLabel={`${spokenBench(snap)} ${analysis.kind === 'value' ? `Current value ${pieceValueTextFromAnalysis(analysis)}.` : ''}`}
+          accessibilityHint="Use the tools below to edit. Tap a token to select it."
+        >
+          {snap.bench.length === 0 && (
+            <Text style={styles.benchEmpty} maxFontSizeMultiplier={1.4}>
+              Your equation takes shape here
+            </Text>
+          )}
+          {snap.bench.map((t, i) => {
+            const selected = !!range && i >= range[0] && i <= range[1];
+            return (
+              <View key={t.id} style={styles.tokenWrap}>
+                {snap.cursor === i && <Cursor />}
+                <PopIn reduce={reduceMotion}>
+                  <Tap
+                    testID={`bench-${i}`}
+                    onPress={() => dispatch({ type: 'tapToken', index: i })}
+                    selected={selected}
+                    accessibilityLabel={`${spokenToken(snap, t)}, position ${i + 1} of ${snap.bench.length}${selected ? ', selected' : ''}`}
+                    accessibilityHint="Selects this token. Tap another token to extend the selection."
+                    style={[styles.token, selected && styles.tokenSelected]}
+                  >
+                    <TokenFace state={state} index={i} benchPieceW={benchPieceW} selected={selected} />
+                  </Tap>
+                </PopIn>
+              </View>
+            );
+          })}
+          {snap.cursor === snap.bench.length && snap.bench.length > 0 && <Cursor />}
+        </View>
+        <ForgeBurst trigger={burst} reduce={reduceMotion} />
+      </Pressable>
+      <Readout message={readout} />
+    </Animated.View>
+  );
+
+  const toolsArea = (
+    <>
+      <FeedbackBanner message={feedback} />
+      <View style={styles.toolRow}>
+        <View style={[styles.flex, hl('lparen') && styles.spotlight]}>
           <ToolKey
+            height={keyH}
             symbol="("
             label={range ? 'Wrap selection in brackets' : 'Open bracket'}
             onPress={() => dispatch({ type: 'insertParen', paren: '(' })}
             tone="blueprint"
             testID="key-lparen"
           />
+        </View>
+        <View style={[styles.flex, hl('rparen') && styles.spotlight]}>
           <ToolKey
+            height={keyH}
             symbol=")"
             label="Close bracket"
             onPress={() => dispatch({ type: 'insertParen', paren: ')' })}
             tone="blueprint"
             testID="key-rparen"
           />
-          {OPS.map((op) => (
-            <View key={op} style={[styles.flex, hl(`op:${op}`) && styles.spotlight]}>
-              <ToolKey symbol={OP_SYMBOL[op]} label={OP_WORD[op]} onPress={() => dispatch({ type: 'insertOp', op })} testID={`key-${op}`} />
-            </View>
-          ))}
         </View>
-        <View style={styles.toolRow}>
-          <ToolKey
-            icon="left"
-            label="Move cursor left"
-            onPress={() => dispatch({ type: 'moveCursor', to: snap.cursor - 1 })}
-            disabled={snap.cursor === 0}
-          />
-          <ToolKey
-            icon="right"
-            label="Move cursor right"
-            onPress={() => dispatch({ type: 'moveCursor', to: snap.cursor + 1 })}
-            disabled={snap.cursor >= snap.bench.length}
-          />
-          <ToolKey
-            icon="backspace"
-            label={range ? 'Remove selection' : 'Delete'}
-            onPress={() => dispatch({ type: 'backspace' })}
-            disabled={!range && snap.cursor === 0}
-            testID="key-backspace"
-          />
-          <View style={[styles.flex, hl('undo') && styles.spotlight]}>
+        {OPS.map((op) => (
+          <View key={op} style={[styles.flex, hl(`op:${op}`) && styles.spotlight]}>
             <ToolKey
-              icon="undo"
-              label="Undo"
-              onPress={() => dispatch({ type: 'undo' })}
-              disabled={state.past.length === 0}
-              testID="key-undo"
+              height={keyH}
+              symbol={OP_SYMBOL[op]}
+              label={OP_WORD[op]}
+              onPress={() => dispatch({ type: 'insertOp', op })}
+              testID={`key-${op}`}
             />
           </View>
+        ))}
+      </View>
+      <View style={styles.toolRow}>
+        <ToolKey
+          height={keyH}
+          icon="left"
+          label="Move cursor left"
+          onPress={() => dispatch({ type: 'moveCursor', to: snap.cursor - 1 })}
+          disabled={snap.cursor === 0}
+        />
+        <ToolKey
+          height={keyH}
+          icon="right"
+          label="Move cursor right"
+          onPress={() => dispatch({ type: 'moveCursor', to: snap.cursor + 1 })}
+          disabled={snap.cursor >= snap.bench.length}
+        />
+        <ToolKey
+          height={keyH}
+          icon="backspace"
+          label={range ? 'Remove selection' : 'Delete'}
+          onPress={() => dispatch({ type: 'backspace' })}
+          disabled={!range && snap.cursor === 0}
+          testID="key-backspace"
+        />
+        <View style={[styles.flex, hl('undo') && styles.spotlight]}>
           <ToolKey
-            icon="redo"
-            label="Redo"
-            onPress={() => dispatch({ type: 'redo' })}
-            disabled={state.future.length === 0}
-            testID="key-redo"
+            height={keyH}
+            icon="undo"
+            label="Undo"
+            onPress={() => dispatch({ type: 'undo' })}
+            disabled={state.past.length === 0}
+            testID="key-undo"
           />
-          <ToolKey icon="clear" label="Clear bench and restore all pieces" onPress={() => dispatch({ type: 'clear' })} testID="key-clear" />
         </View>
-        <View style={styles.actionRow}>
-          <Tap
-            testID="key-forge"
-            onPress={() => dispatch({ type: 'forge', now: Date.now() })}
-            accessibilityLabel={range ? 'Forge selection into one piece' : 'Forge the bench into one piece'}
-            accessibilityHint="Fuses a calculation into a single new piece you can use later"
-            style={[styles.action, styles.forgeAction, hl('forge') && styles.spotlight]}
-          >
-            <View style={styles.actionInner}>
-              <Icon name="spark" color={palette.chalk} size={20} />
+        <ToolKey
+          height={keyH}
+          icon="redo"
+          label="Redo"
+          onPress={() => dispatch({ type: 'redo' })}
+          disabled={state.future.length === 0}
+          testID="key-redo"
+        />
+        <ToolKey
+          height={keyH}
+          icon="clear"
+          label="Clear bench and restore all pieces"
+          onPress={() => dispatch({ type: 'clear' })}
+          testID="key-clear"
+        />
+      </View>
+      <View style={styles.actionRow}>
+        <Tap
+          testID="key-forge"
+          onPress={() => dispatch({ type: 'forge', now: Date.now() })}
+          accessibilityLabel={range ? 'Forge selection into one piece' : 'Forge the bench into one piece'}
+          accessibilityHint="Fuses a calculation into a single new piece you can use later"
+          style={[styles.action, { minHeight: keyH + 4 }, styles.forgeAction, hl('forge') && styles.spotlight]}
+        >
+          <View style={styles.actionInner}>
+            <Icon name="spark" color={palette.chalk} size={20} />
+            <View>
               <Text style={styles.actionText} maxFontSizeMultiplier={1.4}>
-                {range ? 'Forge selection' : 'Forge'}
+                Forge
               </Text>
+              {range && (
+                <Text style={styles.actionSub} maxFontSizeMultiplier={1.2}>
+                  selected part
+                </Text>
+              )}
             </View>
-          </Tap>
-          <Tap
-            testID="key-check"
-            onPress={() => dispatch({ type: 'check', now: Date.now() })}
-            accessibilityLabel="Check equation"
-            accessibilityHint="Tests whether your equation uses all five pieces and makes the target"
-            style={[styles.action, styles.checkAction, hl('check') && styles.spotlight]}
-          >
-            <View style={styles.actionInner}>
-              <Icon name="seal" color={palette.brassInk} size={20} />
-              <Text style={[styles.actionText, { color: palette.brassInk }]} maxFontSizeMultiplier={1.4}>
-                Check
-              </Text>
-            </View>
-          </Tap>
+          </View>
+        </Tap>
+        <Tap
+          testID="key-check"
+          onPress={() => dispatch({ type: 'check', now: Date.now() })}
+          accessibilityLabel="Check equation"
+          accessibilityHint="Tests whether your equation uses all five pieces and makes the target"
+          style={[styles.action, { minHeight: keyH + 4 }, styles.checkAction, hl('check') && styles.spotlight]}
+        >
+          <View style={styles.actionInner}>
+            <Icon name="seal" color={palette.brassInk} size={20} />
+            <Text style={[styles.actionText, { color: palette.brassInk }]} maxFontSizeMultiplier={1.4}>
+              Check
+            </Text>
+          </View>
+        </Tap>
+      </View>
+    </>
+  );
+
+  if (wide) {
+    return (
+      <View style={styles.wideRoot}>
+        <ScrollView style={{ width: contentWidth, flexGrow: 0 }} contentContainerStyle={styles.wideColumn}>
+          {trayArea}
+        </ScrollView>
+        <View style={[styles.wideRight, { width: contentWidth }]}>
+          {benchArea}
+          <View style={styles.wideTools}>{toolsArea}</View>
         </View>
       </View>
+    );
+  }
+
+  return (
+    <View style={styles.root}>
+      <ScrollView style={styles.flex} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+        <View style={[styles.column, { width: contentWidth }]}>
+          {trayArea}
+          {benchArea}
+        </View>
+      </ScrollView>
+
+      {/* Tools stay anchored at the bottom so they never move while the bench grows. */}
+      <View style={[styles.tools, { width: contentWidth }]}>{toolsArea}</View>
     </View>
   );
 }
@@ -444,6 +501,10 @@ function useKeyboard(state: GameState, dispatch: (a: GameAction) => void) {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+  wideRoot: { flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: space.xl },
+  wideColumn: { gap: space.sm, justifyContent: 'center', flexGrow: 1, paddingVertical: space.lg },
+  wideRight: { gap: space.sm, justifyContent: 'center' },
+  wideTools: { gap: space.xs + 2 },
   scrollContent: { paddingTop: space.xs, paddingBottom: space.md },
   column: { alignSelf: 'center', gap: space.sm },
   tools: { alignSelf: 'center', gap: space.xs + 2, paddingTop: space.xs, paddingBottom: space.sm },
@@ -454,7 +515,7 @@ const styles = StyleSheet.create({
   trayRow: { flexDirection: 'row', justifyContent: 'center' },
   pieceTap: { alignItems: 'center', justifyContent: 'center', borderRadius: radius.md },
   slotNote: { fontFamily: fonts.medium, fontSize: 11, color: palette.mist, height: 15, marginTop: 1 },
-  spotlight: { borderRadius: radius.md, borderWidth: 3, borderColor: palette.ember, backgroundColor: 'rgba(255,176,59,0.12)' },
+  spotlight: { borderRadius: radius.md, borderWidth: 3, borderColor: palette.ember },
   forgedRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space.md, justifyContent: 'center' },
   forgedItem: { alignItems: 'center', maxWidth: 120 },
   recipe: { fontFamily: fonts.medium, fontSize: 12, color: palette.brass, textAlign: 'center', marginTop: 2 },
@@ -517,4 +578,5 @@ const styles = StyleSheet.create({
   checkAction: { backgroundColor: palette.brass, borderBottomColor: palette.brassDeep },
   actionInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.sm },
   actionText: { fontFamily: fonts.bold, fontSize: 18, color: palette.chalk },
+  actionSub: { fontFamily: fonts.medium, fontSize: 11, color: palette.chalk, marginTop: -2 },
 });

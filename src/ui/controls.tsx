@@ -11,6 +11,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { Icon, type IconName } from './Icon';
+import { focusFromKeyboard } from './inputModality';
 import { colors, fonts, palette, radius, space, TOUCH } from './theme';
 
 interface BaseProps {
@@ -50,7 +51,7 @@ export function Tap({
       testID={testID}
       onPress={disabled ? undefined : onPress}
       onLongPress={disabled ? undefined : onLongPress}
-      onFocus={() => setFocused(true)}
+      onFocus={() => setFocused(focusFromKeyboard())}
       onBlur={() => setFocused(false)}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
@@ -81,6 +82,7 @@ export function ToolKey({
   wide,
   tone = 'steel',
   testID,
+  height = 52,
 }: {
   symbol?: string;
   icon?: IconName;
@@ -90,6 +92,7 @@ export function ToolKey({
   wide?: boolean;
   tone?: 'steel' | 'blueprint';
   testID?: string;
+  height?: number;
 }) {
   return (
     <Tap
@@ -97,11 +100,14 @@ export function ToolKey({
       onPress={onPress}
       disabled={disabled}
       accessibilityLabel={label}
-      style={[styles.key, wide && { flex: 1.4 }, tone === 'blueprint' && styles.keyBlueprint]}
+      style={[styles.key, { height }, wide && { flex: 1.4 }, tone === 'blueprint' && styles.keyBlueprint]}
     >
       <View style={styles.keyInner}>
         {symbol ? (
-          <Text allowFontScaling={false} style={[styles.keySymbol, tone === 'blueprint' && { color: palette.blueprintLine }]}>
+          <Text
+            allowFontScaling={false}
+            style={[styles.keySymbol, { fontSize: Math.round(height * 0.54) }, tone === 'blueprint' && { color: palette.blueprintLine }]}
+          >
             {symbol}
           </Text>
         ) : (

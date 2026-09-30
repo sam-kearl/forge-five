@@ -38,7 +38,7 @@ export function ProofPanel({
 }) {
   const { puzzle, solution, play } = state;
   if (!solution) return null;
-  const proof = `${formatExpr(solution)} = ${puzzle.target}`;
+  const proof = formatExpr(solution);
   const spokenProof = `${spokenExpr(solution)} equals ${puzzle.target}`;
   const took = play.solvedAt ? duration(play.solvedAt - play.startedAt) : null;
 
@@ -52,6 +52,9 @@ export function ProofPanel({
         <Text style={styles.proofLabel}>PROOF</Text>
         <Text style={styles.proof} maxFontSizeMultiplier={1.6} adjustsFontSizeToFit numberOfLines={3}>
           {proof}
+        </Text>
+        <Text style={styles.proofResult} maxFontSizeMultiplier={1.6}>
+          = {puzzle.target}
         </Text>
       </View>
 
@@ -116,6 +119,7 @@ const styles = StyleSheet.create({
     padding: space.lg,
     alignItems: 'center',
   },
+  proofResult: { fontFamily: fonts.black, fontSize: 30, color: palette.brassDeep, marginTop: 2, fontVariant: ['tabular-nums'] },
   proofLabel: { fontFamily: fonts.semibold, fontSize: 11, letterSpacing: 2, color: palette.brassDeep, marginBottom: space.xs },
   proof: { fontFamily: fonts.bold, fontSize: 26, color: palette.graphite, textAlign: 'center', fontVariant: ['tabular-nums'] },
   checklist: { flexDirection: 'row', gap: space.sm, marginTop: space.xs },
