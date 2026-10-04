@@ -3,8 +3,8 @@
 Source of truth: `src/features/tutorial/script.ts`. It is tested end to end in `src/__tests__/app-logic.test.ts`.
 
 **Puzzle:** pieces 7, 2, 4, 1, 3 → target **18**.
-**Path taught:** forge `2 + 1 + 3 = 6`, then build `(7 − 4) × 6`.
-**Concepts covered:** the target; five pieces used exactly once; placing pieces; tools; repeating a tool; multi-number expressions; forging; a forged piece's memory; forged pieces can't be duplicated; brackets; spending the forged piece; undo; check; the proof; unused tools are fine.
+**Path taught:** forge `2 + 1 + 3 = 6`, forge `7 − 4 = 3`, then build `3 × 6`.
+**Concepts covered:** the target; five pieces used exactly once; placing pieces; tools; repeating a tool; multi-number expressions; forging; a forged piece's memory; forged pieces can't be duplicated; grouping by forging; spending the forged piece; undo; check; the proof; unused tools are fine.
 
 | # | Title | Coaching line | Waits for |
 |---|---|---|---|
@@ -17,16 +17,16 @@ Source of truth: `src/features/tutorial/script.ts`. It is tested end to end in `
 | 7 | Three numbers, one expression | …then tap the 3. Now the bench reads 2 + 1 + 3. | tap 3 |
 | 8 | Forge it | Tap Forge. The whole calculation fuses into one new piece. | Forge |
 | 9 | A piece with a memory | Your new 6 remembers it was made from 2 + 1 + 3. It is a single piece now: once you place it, it is spent. It can't be copied or used twice. | Next |
-| 10 | Brackets group things | Next, build (7 − 4). Start by tapping ( . | ( |
-| 11 | Inside the brackets | Tap the 7. | tap 7 |
-| 12 | Subtract | Tap −. | − |
-| 13 | Almost closed | Tap the 4. | tap 4 |
-| 14 | Close the bracket | Tap ) . The brackets make 7 − 4 happen first, giving 3. | ) |
+| 10 | Group by forging | Next, make 7 − 4. Tap the 7. | tap 7 |
+| 11 | Subtract | Tap −. | − |
+| 12 | Almost there | Tap the 4. The bench shows 3. | tap 4 |
+| 13 | Forge again | Tap Forge. 7 − 4 becomes a single 3, so it is worked out first. Forging is how you group things. | Forge |
+| 14 | Spend a forged piece | Tap your forged 3. It leaves the tray, because a piece can only be used once. | tap forged 3 |
 | 15 | Multiply | Tap ×. | × |
-| 16 | Spend your forged piece | Tap your forged 6. It leaves the tray, because it can only be used once. | tap forged 6 |
+| 16 | And the other one | Tap your forged 6. | tap forged 6 |
 | 17 | Changed your mind? | Mistakes cost nothing. Tap Undo to take back your last move. | Undo |
 | 18 | Put it back | The 6 is back in the tray. Tap it again to finish the equation. | tap forged 6 |
-| 19 | Check your work | All five pieces are in: 7, 4, 2, 1 and 3. The bench shows 18. Tap Check. | Check |
+| 19 | Check your work | All five pieces are on the bench, so the Forge button has turned into Check. The bench shows 18. Tap Check. | Check |
 | — | **You forged it!** | The proof shows every original piece: (7 − 4) × (2 + 1 + 3) = 18. You never needed ÷, and that's fine. Use whichever tools help. You can type a whole equation at once or forge parts along the way. | Start playing |
 
 **Off-script hint:** "Try the highlighted control. You'll have free rein in a moment!"

@@ -3,7 +3,7 @@
  * Pure data + predicates so the whole flow is unit-tested.
  *
  * Puzzle: pieces 7, 2, 4, 1, 3 → target 18
- * Path taught:  2 + 1 + 3 = 6 (forged), then (7 − 4) × 6 = 18
+ * Path taught:  forge 2 + 1 + 3 = 6, forge 7 − 4 = 3, then 3 × 6 = 18
  */
 import {
   createGame,
@@ -53,6 +53,8 @@ export function tutorialPuzzle(): Puzzle {
 export const createTutorialGame = (now: number) => createGame(tutorialPuzzle(), now);
 
 const forgedId = (s: GameState) => s.snap.tray.find((id) => s.snap.pieces[id].kind === 'forged');
+const forgedWithValue = (s: GameState, v: number) =>
+  s.snap.tray.find((id) => s.snap.pieces[id].kind === 'forged' && Rational.equals(s.snap.pieces[id].value, Rational.int(v)));
 
 export interface TutorialStep {
   id: string;
@@ -72,7 +74,6 @@ export interface TutorialStep {
 
 const piece = (id: string) => (a: GameAction) => a.type === 'insertPiece' && a.pieceId === id;
 const op = (o: 'add' | 'sub' | 'mul' | 'div') => (a: GameAction) => a.type === 'insertOp' && a.op === o;
-const paren = (p: '(' | ')') => (a: GameAction) => a.type === 'insertParen' && a.paren === p;
 
 export const TUTORIAL_STEPS: TutorialStep[] = [
   {
@@ -137,16 +138,9 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     highlight: () => ['forged'],
   },
   {
-    id: 'open',
-    title: 'Brackets group things',
-    body: 'Next, build (7 − 4). Start by tapping ( .',
-    highlight: () => ['lparen'],
-    expects: paren('('),
-  },
-  {
     id: 'place-7',
-    title: 'Inside the brackets',
-    body: 'Tap the 7.',
+    title: 'Group by forging',
+    body: 'Next, make 7 − 4. Tap the 7.',
     highlight: () => [`piece:${S7}`],
     expects: piece(S7),
   },
@@ -159,17 +153,25 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
   },
   {
     id: 'place-4',
-    title: 'Almost closed',
-    body: 'Tap the 4.',
+    title: 'Almost there',
+    body: 'Tap the 4. The bench shows 3.',
     highlight: () => [`piece:${S4}`],
     expects: piece(S4),
   },
   {
-    id: 'close',
-    title: 'Close the bracket',
-    body: 'Tap ) . The brackets make 7 − 4 happen first, giving 3.',
-    highlight: () => ['rparen'],
-    expects: paren(')'),
+    id: 'forge-again',
+    title: 'Forge again',
+    body: 'Tap Forge. 7 − 4 becomes a single 3, so it is worked out first. Forging is how you group things.',
+    highlight: () => ['forge'],
+    expects: (a) => a.type === 'forge',
+    done: (s) => !!forgedWithValue(s, 3),
+  },
+  {
+    id: 'use-3',
+    title: 'Spend a forged piece',
+    body: 'Tap your forged 3. It leaves the tray, because a piece can only be used once.',
+    highlight: () => ['forged'],
+    expects: (a, s) => a.type === 'insertPiece' && a.pieceId === forgedWithValue(s, 3),
   },
   {
     id: 'times',
@@ -180,10 +182,10 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
   },
   {
     id: 'use-forged',
-    title: 'Spend your forged piece',
-    body: 'Tap your forged 6. It leaves the tray, because it can only be used once.',
+    title: 'And the other one',
+    body: 'Tap your forged 6.',
     highlight: () => ['forged'],
-    expects: (a, s) => a.type === 'insertPiece' && a.pieceId === forgedId(s),
+    expects: (a, s) => a.type === 'insertPiece' && a.pieceId === forgedWithValue(s, 6),
   },
   {
     id: 'undo',
@@ -197,12 +199,12 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
     title: 'Put it back',
     body: 'The 6 is back in the tray. Tap it again to finish the equation.',
     highlight: () => ['forged'],
-    expects: (a, s) => a.type === 'insertPiece' && a.pieceId === forgedId(s),
+    expects: (a, s) => a.type === 'insertPiece' && a.pieceId === forgedWithValue(s, 6),
   },
   {
     id: 'check',
     title: 'Check your work',
-    body: 'All five pieces are in: 7, 4, 2, 1 and 3. The bench shows 18. Tap Check.',
+    body: 'All five pieces are on the bench, so the Forge button has turned into Check. The bench shows 18. Tap Check.',
     highlight: () => ['check'],
     expects: (a) => a.type === 'check',
     done: (s) => s.status === 'solved',

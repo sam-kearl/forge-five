@@ -64,36 +64,45 @@ describe('GameBoard accessibility and tap-only play', () => {
   it('can be solved entirely by tapping, and describes the equation for screen readers', async () => {
     let last: GameState | null = null;
     await render(<Harness initial={createGame(puzzleOf([8, 4, 2, 3, 6], 36), 0)} onState={(s) => (last = s)} />);
-    const tap = (id: string) => fireEvent.press(screen.getByTestId(id));
-    await tap('key-lparen');
+    const tap = (id: string | RegExp) => fireEvent.press(screen.getByTestId(id));
+    // (8 + 4 + 2) × 3 − 6: the group is made by forging, not brackets.
     await tap('tray-s0');
     await tap('key-add');
     await tap('tray-s1');
     await tap('key-add');
     await tap('tray-s2');
-    await tap('key-rparen');
+    expect(screen.getByLabelText('Forge the bench into one piece')).toBeTruthy();
+    await tap('key-primary');
+    await tap(/^tray-f/);
     await tap('key-mul');
     await tap('tray-s3');
     // Consumed pieces are announced as in use.
-    expect(screen.getByLabelText('8, piece 1 of 5, in the equation')).toBeTruthy();
+    expect(screen.getByLabelText('8, piece 1 of 5, forged into another piece')).toBeTruthy();
     expect(screen.getByText('= 42')).toBeTruthy();
-    expect(screen.getByLabelText(/Equation: open bracket 8 plus 4 plus 2 close bracket times 3\. Current value 42\./)).toBeTruthy();
+    expect(screen.getByLabelText(/Equation: forged 14 times 3\. Current value 42\./)).toBeTruthy();
     await tap('key-sub');
     await tap('tray-s4');
-    await tap('key-check');
+    // With every piece on the bench, the single action button becomes Check.
+    expect(screen.getByLabelText('Check equation')).toBeTruthy();
+    await tap('key-primary');
     expect(last!.status).toBe('solved');
   });
 
-  it('forges a subexpression and exposes its provenance', async () => {
+  it('forges a subexpression, exposes its provenance, and keeps the screen quiet', async () => {
     await render(<Harness initial={createGame(puzzleOf([8, 4, 2, 3, 6], 36), 0)} />);
     const tap = (id: string) => fireEvent.press(screen.getByTestId(id));
     await tap('tray-s0');
     await tap('key-add');
     await tap('tray-s1');
-    await tap('key-forge');
+    await tap('key-primary');
     expect(screen.getByLabelText('Forged 12, made from 8 plus 4')).toBeTruthy();
     expect(screen.getByLabelText('Break apart forged 12')).toBeTruthy();
-    expect(screen.getByText('Forged 12 from 8 + 4.')).toBeTruthy();
+    // Routine confirmations (forge, undo, clear) are not shown in a message box.
+    expect(screen.queryByText('Forged 12 from 8 + 4.')).toBeNull();
+    await tap('key-undo');
+    expect(screen.queryByText('Undone.')).toBeNull();
+    await tap('key-clear');
+    expect(screen.queryByText(/Bench cleared/)).toBeNull();
   });
 
   it('explains invalid steps in words', async () => {

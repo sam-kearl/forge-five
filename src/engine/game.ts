@@ -151,6 +151,20 @@ export function analyzeTokens(snap: Snapshot, tokens: readonly Token[], rules: R
 export const analyzeBench = (state: GameState, rules: RuleSet = INITIAL_CONFIG.rules) =>
   analyzeTokens(state.snap, state.snap.bench, rules, state.puzzle.sources.length);
 
+/**
+ * What the single Forge/Check button does right now:
+ *  - a selection on the bench is forged in place;
+ *  - once every live piece is on the bench (or fused into one piece), it checks;
+ *  - otherwise the bench is forged into a new piece.
+ */
+export function primaryAction(state: GameState): 'forge' | 'check' {
+  const { snap } = state;
+  if (state.selection) return 'forge';
+  if (snap.tray.length === 0 && snap.bench.length > 0) return 'check';
+  if (snap.bench.length === 0 && snap.tray.length === 1 && snap.pieces[snap.tray[0]].kind === 'forged') return 'check';
+  return 'forge';
+}
+
 /** Where is each source right now? Used for the tray sockets and accessibility. */
 export type SourceLocation = 'tray' | 'bench' | { forgedInto: PieceId };
 

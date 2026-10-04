@@ -30,6 +30,8 @@ behind an interface until a compliant provider is chosen.
 | A7 | Drag interactions. | Every action works by tapping (required for accessibility). A drag-to-bench gesture is optional polish and is scheduled after tap play is complete. "Rearrange" is done with the cursor, selection, remove and re-insert, plus reordering in the tray. |
 | A8 | Submit vs Forge naming. | Two different verbs keep them apart: **Forge** (fuse part of the equation into a piece) and **Check** (submit). |
 | A9 | Parental gate. | It is a replaceable component. The first version asks a written-out question in words that young children are unlikely to answer. It is flagged for policy review, because arithmetic is not an ideal gate in a math game (see `docs/REVIEW_ITEMS.md`). |
+| A11 | Bracket and cursor keys (product decision, 2026-10-04). | The ( ) and ◀ ▶ keys were removed to simplify the tool area. Grouping is done by forging a selection or the bench, which can express every tree, so every puzzle stays solvable. The engine still parses brackets (proofs print them), and the tutorial teaches grouping by forging. |
+| A12 | One action button (product decision, 2026-10-04). | Forge and Check are merged: the button forges a selection, or forges the bench while pieces remain in the tray, and becomes **Check** once every piece is on the bench (`primaryAction` in `game.ts`). Routine confirmations (forged, undone, cleared) are announced to screen readers but no longer shown on screen. |
 | A10 | Number type. | The engine uses an exact `Rational` (numerator/denominator of safe integers). Under the initial rules every value is a whole number (denominator 1). Fractions and negatives are rule flags in the central config, so no solver rewrite is needed later. |
 
 ## 3. Milestones
@@ -149,6 +151,6 @@ The solver is an exhaustive dynamic program over subsets of piece identities:
 
 * Source pieces are **hex-nut components**: ceramic faces with a coolant rim. Selected pieces warm to ember. Forged pieces are brass-plated and show their recipe underneath. Used pieces leave a dashed "socket" outline in the tray.
 * The target is a **blueprint card** with grid lines and dimension marks, labelled "SPEC".
-* Operators are steel tool keys carrying large standard symbols (`+ − × ÷ ( )`).
+* Operators are steel tool keys carrying large standard symbols (`+ − × ÷`). The clear (trash) key is red.
 * A solve ends with a round brass **seal stamp**.
 * Typeface: **Lexend** (SIL OFL 1.1). It is geometric and was designed for reading ease, with clearly different 1/7 and 6/9, and tabular figures.

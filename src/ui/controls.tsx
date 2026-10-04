@@ -88,7 +88,7 @@ export function ToolKey({
   label: string;
   onPress: () => void;
   disabled?: boolean;
-  tone?: 'steel' | 'blueprint';
+  tone?: 'steel' | 'blueprint' | 'danger';
   testID?: string;
   height?: number;
 }) {
@@ -98,7 +98,7 @@ export function ToolKey({
       onPress={onPress}
       disabled={disabled}
       accessibilityLabel={label}
-      style={[styles.key, { height }, tone === 'blueprint' && styles.keyBlueprint]}
+      style={[styles.key, { height }, tone === 'blueprint' && styles.keyBlueprint, tone === 'danger' && styles.keyDanger]}
     >
       <View style={styles.keyInner}>
         {symbol ? (
@@ -187,10 +187,9 @@ const styles = StyleSheet.create({
     backgroundColor: palette.steelHi,
     borderWidth: 1,
     borderColor: palette.steelLine,
-    borderBottomWidth: 3,
-    borderBottomColor: palette.inkDeep,
   },
   keyBlueprint: { backgroundColor: palette.blueprintDeep, borderColor: '#2A5C8C' },
+  keyDanger: { backgroundColor: palette.danger, borderColor: palette.dangerEdge },
   keyInner: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   keySymbol: { fontFamily: fonts.bold, fontSize: 28, color: palette.chalk, includeFontPadding: false },
   button: {

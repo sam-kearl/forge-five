@@ -10,7 +10,7 @@
 | Rendering: pieces, blueprint, seal, icons | react-native-svg renders to SVG in the DOM. |
 | Phone, tablet and wide layouts | Single column up to 640 px; two columns at ≥ 900 px wide in landscape (checked at 1366×768). |
 | Mouse / touch-screen | All controls are pressables. Tap and click behave the same. |
-| Keyboard play | Digits map to available pieces only (no free constants). `+ - * x /`, `( )`, ← →, Home/End, Backspace, Enter = Check, `f` = Forge, Ctrl/Cmd-Z undo, Shift+Ctrl/Cmd-Z redo, Esc clears the selection. |
+| Keyboard play | Digits map to available pieces only (no free constants). `+ - * x /`, ← →, Home/End, Backspace, Enter = the Forge/Check button, `f` = Forge, Ctrl/Cmd-Z undo, Shift+Ctrl/Cmd-Z redo, Esc clears the selection. |
 | Focus visibility | Ember focus ring shown for keyboard focus only (focus-visible behaviour). |
 | Persistence | AsyncStorage uses `localStorage`. Falls back gracefully if storage is blocked. |
 | Offline | No network needed after load. A service worker (PWA) would allow offline launch. |

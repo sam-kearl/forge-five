@@ -2,7 +2,7 @@
 
 *Five numbers. One target. Forge the answer.*
 
-Forge Five is an arithmetic puzzle game for iOS (first), Android and, later, the web. Each puzzle deals five numbered pieces (1–25) and a target (1–25). You build an equation that uses every piece exactly once with `+ − × ÷` and brackets. You can write it all at once, or **forge** part of it into a new piece that remembers what it's made of.
+Forge Five is an arithmetic puzzle game for iOS (first), Android and, later, the web. Each puzzle deals five numbered pieces (1–25) and a target (1–25). You build an equation that uses every piece exactly once with `+ − × ÷`. To group part of a calculation, you **forge** it into a new piece that remembers what it's made of, so no bracket keys are needed.
 
 > "Forge Five" is a working name. Trademark clearance has not been done. See [docs/REVIEW_ITEMS.md](docs/REVIEW_ITEMS.md).
 

@@ -12,7 +12,7 @@ A bright, clever workshop at night: blueprint paper, ceramic and brass component
 |---|---|---|
 | `ink` | #161B24 | App background |
 | `steel` / `steelHi` / `steelLine` | #262F3D / #35404F / #4A5668 | Panels, tool keys, borders |
-| `blueprint` / `blueprintLine` | #15406A / #6FB2E8 | Target card and bracket keys |
+| `blueprint` / `blueprintLine` | #15406A / #6FB2E8 | Target card |
 | **`coolant`** | #2EC4B6 | *Cool*: available pieces, toggles |
 | **`ember`** | #FFB03B | *Warm*: selection, cursor, focus, primary buttons |
 | **`flux`** | #FF6A3D | *Hot*: the Forge action and forge burst |
@@ -83,7 +83,7 @@ There are no flashing effects and nothing loops. Reduced motion follows the devi
 | Event | Sound | Haptic |
 |---|---|---|
 | Place a number | `tap`: ceramic tick | Selection |
-| Place a tool or bracket | `tool`: soft click | Selection |
+| Place a tool | `tool`: soft click | Selection |
 | Forge | `forge`: whoosh and chime | Medium impact |
 | Undo, redo, delete, clear, break apart | `undo`: descending pair | Selection |
 | Invalid step | `invalid`: soft thunk | Warning |
@@ -98,4 +98,4 @@ Sound and haptics are independent toggles. Sound respects the iOS silent switch 
 - The bench exposes the whole equation in words plus its current value.
 - Forged pieces announce their recipe and offer a "Break apart" accessibility action.
 - Feedback is announced (`announceForAccessibility`) and sits in polite live regions.
-- Every action works by tapping. On web, the keyboard supports digits, `+ - * x /`, brackets, arrows, Backspace, Enter (check), `f` (forge) and Ctrl/Cmd-Z (undo, with Shift for redo).
+- Every action works by tapping. On web, the keyboard supports digits, `+ - * x /`, arrows, Backspace, Enter (the Forge/Check button), `f` (forge) and Ctrl/Cmd-Z (undo, with Shift for redo).

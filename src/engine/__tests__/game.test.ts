@@ -1,7 +1,16 @@
 import type { Op } from '../arithmetic';
 import { leaves } from '../expr';
 import { formatExpr } from '../format';
-import { analyzeBench, checkInvariants, createGame, gameReducer, sourceLocations, type GameAction, type GameState } from '../game';
+import {
+  analyzeBench,
+  checkInvariants,
+  createGame,
+  gameReducer,
+  primaryAction,
+  sourceLocations,
+  type GameAction,
+  type GameState,
+} from '../game';
 import type { ForgedPiece } from '../pieces';
 import type { Puzzle } from '../puzzle';
 import * as R from '../rational';
@@ -361,6 +370,41 @@ describe('editing, undo, redo and clear', () => {
     const before = s;
     s = play(s, { type: 'reorderTray', order: ['s4', 's4', 's2', 's1', 's0'] });
     expect(s).toBe(before);
+  });
+});
+
+describe('the combined Forge/Check button', () => {
+  it('forges while pieces remain in the tray', () => {
+    expect(primaryAction(fresh())).toBe('forge');
+    expect(primaryAction(play(fresh(), P('s0'), O('add'), P('s1')))).toBe('forge');
+  });
+
+  it('checks once every piece is on the bench', () => {
+    const s = play(fresh(), P('s0'), O('add'), P('s1'), O('add'), P('s2'), O('add'), P('s3'), O('add'), P('s4'));
+    expect(primaryAction(s)).toBe('check');
+  });
+
+  it('forges a selection even when every piece is on the bench', () => {
+    let s = play(fresh(), P('s0'), O('add'), P('s1'), O('add'), P('s2'), O('add'), P('s3'), O('add'), P('s4'));
+    s = play(s, { type: 'tapToken', index: 0 }, { type: 'tapToken', index: 2 });
+    expect(primaryAction(s)).toBe('forge');
+  });
+
+  it('checks a single forged piece that holds everything', () => {
+    const s = play(fresh(), P('s0'), O('add'), P('s1'), O('add'), P('s2'), O('add'), P('s3'), O('add'), P('s4'), FORGE);
+    expect(s.snap.tray).toHaveLength(1);
+    expect(primaryAction(s)).toBe('check');
+  });
+
+  it('can solve a puzzle that needs grouping without bracket keys', () => {
+    // (8 + 4 + 2) × 3 − 6 = 36, grouping by forging instead of brackets.
+    let s = play(fresh(), P('s0'), O('add'), P('s1'), O('add'), P('s2'), FORGE);
+    const f = s.snap.tray[s.snap.tray.length - 1];
+    s = play(s, P(f), O('mul'), P('s3'), O('sub'), P('s4'));
+    expect(primaryAction(s)).toBe('check');
+    s = play(s, CHECK);
+    expect(s.status).toBe('solved');
+    expect(formatExpr(s.solution!)).toBe('(8 + 4 + 2) × 3 − 6');
   });
 });
 

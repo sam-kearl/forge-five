@@ -34,6 +34,8 @@ export const palette = {
   quench: '#9B8CFF', // gentle "cooling" issue colour on dark surfaces (always with icon + text)
   quenchInk: '#4B3FB0', // issue colour on light surfaces
   success: '#7CD992',
+  danger: '#C93C3C', // destructive actions (clear the bench)
+  dangerEdge: '#E06666',
 } as const;
 
 export const colors = {

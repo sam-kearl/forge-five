@@ -32,7 +32,8 @@ import {
 describe('tutorial', () => {
   /** The action a player would take to satisfy each step. */
   function actionFor(stepId: string, s: GameState): GameAction | null {
-    const forged = s.snap.tray.find((id) => s.snap.pieces[id].kind === 'forged');
+    const forged = (v: number) =>
+      s.snap.tray.find((id) => s.snap.pieces[id].kind === 'forged' && s.snap.pieces[id].value.num === v) ?? 'missing';
     const map: Record<string, GameAction | null> = {
       target: null,
       pieces: null,
@@ -43,15 +44,15 @@ describe('tutorial', () => {
       'place-3': { type: 'insertPiece', pieceId: 's4' },
       forge: { type: 'forge', now: 1 },
       'forged-explained': null,
-      open: { type: 'insertParen', paren: '(' },
       'place-7': { type: 'insertPiece', pieceId: 's0' },
       minus: { type: 'insertOp', op: 'sub' },
       'place-4': { type: 'insertPiece', pieceId: 's2' },
-      close: { type: 'insertParen', paren: ')' },
+      'forge-again': { type: 'forge', now: 1 },
+      'use-3': { type: 'insertPiece', pieceId: forged(3) },
       times: { type: 'insertOp', op: 'mul' },
-      'use-forged': forged ? { type: 'insertPiece', pieceId: forged } : null,
+      'use-forged': { type: 'insertPiece', pieceId: forged(6) },
       undo: { type: 'undo' },
-      'redo-place': forged ? { type: 'insertPiece', pieceId: forged } : null,
+      'redo-place': { type: 'insertPiece', pieceId: forged(6) },
       check: { type: 'check', now: 2 },
     };
     if (!(stepId in map)) throw new Error(`no scripted action for ${stepId}`);
@@ -95,7 +96,7 @@ describe('tutorial', () => {
       'bench',
       'as often as you like',
       'forge',
-      'bracket',
+      'group',
       'undo',
       'check',
       'used twice',

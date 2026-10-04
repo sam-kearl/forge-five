@@ -1,6 +1,17 @@
 import { useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { AccessibilityInfo, Animated, Platform, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
-import { analyzeBench, OP_SYMBOL, OP_WORD, recipeOf, selectionRange, type GameAction, type GameState, type Op } from '../../engine';
+import {
+  analyzeBench,
+  OP_SYMBOL,
+  OP_WORD,
+  primaryAction,
+  recipeOf,
+  selectionRange,
+  type Feedback,
+  type GameAction,
+  type GameState,
+  type Op,
+} from '../../engine';
 import { ToolKey, Tap } from '../../ui/controls';
 import { Icon } from '../../ui/Icon';
 import { ForgeBurst, PopIn, useShake } from '../../ui/motion';
@@ -19,20 +30,7 @@ import {
 } from './messages';
 
 /** Identifiers for controls that the tutorial can spotlight. */
-export type ControlKey =
-  | `piece:${string}`
-  | `op:${Op}`
-  | 'lparen'
-  | 'rparen'
-  | 'forge'
-  | 'check'
-  | 'undo'
-  | 'redo'
-  | 'backspace'
-  | 'clear'
-  | 'left'
-  | 'right'
-  | 'forged';
+export type ControlKey = `piece:${string}` | `op:${Op}` | 'forge' | 'check' | 'undo' | 'redo' | 'backspace' | 'clear' | 'forged';
 
 export interface GameBoardProps {
   state: GameState;
@@ -45,6 +43,17 @@ export interface GameBoardProps {
 }
 
 const OPS: Op[] = ['add', 'sub', 'mul', 'div'];
+
+/** Routine confirmations that would only add noise on screen (still announced to screen readers). */
+const QUIET_FEEDBACK = new Set<Feedback['kind']>([
+  'forged',
+  'broken-apart',
+  'undone',
+  'redone',
+  'cleared',
+  'nothing-to-undo',
+  'nothing-to-redo',
+]);
 
 export function GameBoard({ state, dispatch, reduceMotion, highlight = [], compact }: GameBoardProps) {
   const { width, height } = useWindowDimensions();
@@ -65,6 +74,8 @@ export function GameBoard({ state, dispatch, reduceMotion, highlight = [], compa
   const analysis = useMemo(() => analyzeBench(state), [state.snap, state.puzzle]); // eslint-disable-line react-hooks/exhaustive-deps
   const readout = readoutMessage(state, analysis);
   const feedback = feedbackMessage(state);
+  const banner = state.feedback && QUIET_FEEDBACK.has(state.feedback.kind) ? null : feedback;
+  const primary = primaryAction(state);
   const range = selectionRange(state.selection);
   const hl = (k: ControlKey) => highlight.includes(k);
 
@@ -90,10 +101,10 @@ export function GameBoard({ state, dispatch, reduceMotion, highlight = [], compa
   };
   const forgedInTray = snap.tray.filter((id) => snap.pieces[id].kind === 'forged');
 
+  const targetArea = <TargetBlueprint target={puzzle.target} width={contentWidth} compact={compactTarget} />;
+
   const trayArea = (
     <>
-      <TargetBlueprint target={puzzle.target} width={contentWidth} compact={compactTarget} />
-
       {/* Source tray: five fixed slots, so identical values keep distinct positions. */}
       <View style={styles.trayHeader}>
         <Text style={styles.caption} maxFontSizeMultiplier={1.4}>
@@ -216,28 +227,8 @@ export function GameBoard({ state, dispatch, reduceMotion, highlight = [], compa
 
   const toolsArea = (
     <>
-      <FeedbackBanner message={feedback} />
+      <FeedbackBanner message={banner} />
       <View style={styles.toolRow}>
-        <Slot on={hl('lparen')}>
-          <ToolKey
-            height={keyH}
-            symbol="("
-            label={range ? 'Wrap selection in brackets' : 'Open bracket'}
-            onPress={() => dispatch({ type: 'insertParen', paren: '(' })}
-            tone="blueprint"
-            testID="key-lparen"
-          />
-        </Slot>
-        <Slot on={hl('rparen')}>
-          <ToolKey
-            height={keyH}
-            symbol=")"
-            label="Close bracket"
-            onPress={() => dispatch({ type: 'insertParen', paren: ')' })}
-            tone="blueprint"
-            testID="key-rparen"
-          />
-        </Slot>
         {OPS.map((op) => (
           <Slot key={op} on={hl(`op:${op}`)}>
             <ToolKey
@@ -251,24 +242,6 @@ export function GameBoard({ state, dispatch, reduceMotion, highlight = [], compa
         ))}
       </View>
       <View style={styles.toolRow}>
-        <Slot on={hl('left')}>
-          <ToolKey
-            height={keyH}
-            icon="left"
-            label="Move cursor left"
-            onPress={() => dispatch({ type: 'moveCursor', to: snap.cursor - 1 })}
-            disabled={snap.cursor === 0}
-          />
-        </Slot>
-        <Slot on={hl('right')}>
-          <ToolKey
-            height={keyH}
-            icon="right"
-            label="Move cursor right"
-            onPress={() => dispatch({ type: 'moveCursor', to: snap.cursor + 1 })}
-            disabled={snap.cursor >= snap.bench.length}
-          />
-        </Slot>
         <Slot on={hl('backspace')}>
           <ToolKey
             height={keyH}
@@ -303,49 +276,46 @@ export function GameBoard({ state, dispatch, reduceMotion, highlight = [], compa
           <ToolKey
             height={keyH}
             icon="clear"
+            tone="danger"
             label="Clear bench and restore all pieces"
             onPress={() => dispatch({ type: 'clear' })}
             testID="key-clear"
           />
         </Slot>
       </View>
-      <View style={styles.actionRow}>
-        <Tap
-          testID="key-forge"
-          onPress={() => dispatch({ type: 'forge', now: Date.now() })}
-          accessibilityLabel={range ? 'Forge selection into one piece' : 'Forge the bench into one piece'}
-          accessibilityHint="Fuses a calculation into a single new piece you can use later"
-          style={[styles.action, { minHeight: keyH + 4 }, styles.forgeAction, hl('forge') && styles.spotlight]}
-        >
-          <View style={styles.actionInner}>
-            <Icon name="spark" color={palette.chalk} size={20} />
-            <View>
-              <Text style={styles.actionText} maxFontSizeMultiplier={1.4}>
-                Forge
-              </Text>
-              {range && (
-                <Text style={styles.actionSub} maxFontSizeMultiplier={1.2}>
-                  selected part
-                </Text>
-              )}
-            </View>
-          </View>
-        </Tap>
-        <Tap
-          testID="key-check"
-          onPress={() => dispatch({ type: 'check', now: Date.now() })}
-          accessibilityLabel="Check equation"
-          accessibilityHint="Tests whether your equation uses all five pieces and makes the target"
-          style={[styles.action, { minHeight: keyH + 4 }, styles.checkAction, hl('check') && styles.spotlight]}
-        >
-          <View style={styles.actionInner}>
-            <Icon name="seal" color={palette.brassInk} size={20} />
-            <Text style={[styles.actionText, { color: palette.brassInk }]} maxFontSizeMultiplier={1.4}>
-              Check
+      {/* One action button: forges until every piece is on the bench, then checks. */}
+      <Tap
+        testID="key-primary"
+        onPress={() => dispatch({ type: primary, now: Date.now() })}
+        accessibilityLabel={
+          primary === 'check' ? 'Check equation' : range ? 'Forge selection into one piece' : 'Forge the bench into one piece'
+        }
+        accessibilityHint={
+          primary === 'check'
+            ? 'Tests whether your equation uses all five pieces and makes the target'
+            : 'Fuses a calculation into a single new piece you can use later'
+        }
+        style={[
+          styles.action,
+          { minHeight: keyH + 4 },
+          primary === 'check' ? styles.checkAction : styles.forgeAction,
+          (hl('forge') || hl('check')) && styles.spotlight,
+        ]}
+      >
+        <View style={styles.actionInner}>
+          <Icon name={primary === 'check' ? 'seal' : 'spark'} color={primary === 'check' ? palette.brassInk : palette.chalk} size={20} />
+          <View>
+            <Text style={[styles.actionText, primary === 'check' && { color: palette.brassInk }]} maxFontSizeMultiplier={1.4}>
+              {primary === 'check' ? 'Check' : 'Forge'}
             </Text>
+            {range && (
+              <Text style={styles.actionSub} maxFontSizeMultiplier={1.2}>
+                selected part
+              </Text>
+            )}
           </View>
-        </Tap>
-      </View>
+        </View>
+      </Tap>
     </>
   );
 
@@ -353,6 +323,7 @@ export function GameBoard({ state, dispatch, reduceMotion, highlight = [], compa
     return (
       <View style={styles.wideRoot}>
         <ScrollView style={{ width: contentWidth, flexGrow: 0 }} contentContainerStyle={styles.wideColumn}>
+          {targetArea}
           {trayArea}
         </ScrollView>
         <View style={[styles.wideRight, { width: contentWidth }]}>
@@ -367,8 +338,9 @@ export function GameBoard({ state, dispatch, reduceMotion, highlight = [], compa
     <View style={styles.root}>
       <ScrollView style={styles.flex} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <View style={[styles.column, { width: contentWidth }]}>
-          {trayArea}
+          {targetArea}
           {benchArea}
+          {trayArea}
         </View>
       </ScrollView>
 
@@ -435,7 +407,7 @@ function Readout({ message }: { message: Message }) {
 }
 
 function FeedbackBanner({ message }: { message: Message | null }) {
-  if (!message) return <View style={styles.bannerSpacer} />;
+  if (!message) return null;
   const icon = message.tone === 'good' ? 'check' : message.tone === 'issue' ? 'info' : 'spark';
   const color = message.tone === 'good' ? colors.good : message.tone === 'issue' ? colors.issue : palette.ember;
   return (
@@ -488,8 +460,6 @@ function useKeyboard(state: GameState, dispatch: (a: GameAction) => void) {
         '*': { type: 'insertOp', op: 'mul' },
         x: { type: 'insertOp', op: 'mul' },
         '/': { type: 'insertOp', op: 'div' },
-        '(': { type: 'insertParen', paren: '(' },
-        ')': { type: 'insertParen', paren: ')' },
         Backspace: { type: 'backspace' },
         ArrowLeft: { type: 'moveCursor', to: s.snap.cursor - 1 },
         ArrowRight: { type: 'moveCursor', to: s.snap.cursor + 1 },
@@ -504,7 +474,7 @@ function useKeyboard(state: GameState, dispatch: (a: GameAction) => void) {
         return;
       }
       if (k === 'Enter' && !(target && target.getAttribute('role') === 'button')) {
-        d({ type: 'check', now: Date.now() });
+        d({ type: primaryAction(s), now: Date.now() });
         e.preventDefault();
         return;
       }
@@ -582,7 +552,6 @@ const styles = StyleSheet.create({
   },
   readoutText: { fontFamily: fonts.medium, fontSize: 14, flexShrink: 1 },
   readoutValue: { fontFamily: fonts.bold, fontSize: 18, fontVariant: ['tabular-nums'] },
-  bannerSpacer: { minHeight: 48 },
   banner: {
     minHeight: 48,
     flexDirection: 'row',
@@ -597,10 +566,9 @@ const styles = StyleSheet.create({
   bannerText: { fontFamily: fonts.medium, fontSize: 14, color: palette.chalk, flexShrink: 1, lineHeight: 19 },
   toolRow: { flexDirection: 'row', gap: space.xs + 2 },
   slot: { flex: 1, minWidth: 0 },
-  actionRow: { flexDirection: 'row', gap: space.sm, marginTop: space.xs },
-  action: { flex: 1, minHeight: 56, borderRadius: radius.lg, justifyContent: 'center', borderBottomWidth: 4 },
-  forgeAction: { backgroundColor: palette.flux, borderBottomColor: '#B8431F' },
-  checkAction: { backgroundColor: palette.brass, borderBottomColor: palette.brassDeep },
+  action: { minHeight: 56, borderRadius: radius.lg, justifyContent: 'center', marginTop: space.xs },
+  forgeAction: { backgroundColor: palette.flux },
+  checkAction: { backgroundColor: palette.brass },
   actionInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.sm },
   actionText: { fontFamily: fonts.bold, fontSize: 18, color: palette.chalk },
   actionSub: { fontFamily: fonts.medium, fontSize: 11, color: palette.chalk, marginTop: -2 },
