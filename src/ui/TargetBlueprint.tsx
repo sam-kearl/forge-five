@@ -43,10 +43,10 @@ export function TargetBlueprint({ target, width, compact }: { target: number; wi
       </Svg>
       <View style={styles.labelRow} importantForAccessibility="no-hide-descendants">
         <Text style={styles.label} maxFontSizeMultiplier={1.3}>
-          SPEC
+          TARGET
         </Text>
         <Text style={styles.label} maxFontSizeMultiplier={1.3}>
-          TARGET
+          ANSWER
         </Text>
       </View>
       <Text

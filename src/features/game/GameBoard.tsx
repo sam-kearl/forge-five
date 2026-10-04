@@ -17,7 +17,7 @@ import { Icon } from '../../ui/Icon';
 import { ForgeBurst, PopIn, useShake } from '../../ui/motion';
 import { PieceShape } from '../../ui/PieceShape';
 import { TargetBlueprint } from '../../ui/TargetBlueprint';
-import { colors, fonts, palette, radius, space } from '../../ui/theme';
+import { fonts, palette, radius, space } from '../../ui/theme';
 import {
   feedbackMessage,
   pieceA11yLabel,
@@ -74,7 +74,8 @@ export function GameBoard({ state, dispatch, reduceMotion, highlight = [], compa
   const analysis = useMemo(() => analyzeBench(state), [state.snap, state.puzzle]); // eslint-disable-line react-hooks/exhaustive-deps
   const readout = readoutMessage(state, analysis);
   const feedback = feedbackMessage(state);
-  const banner = state.feedback && QUIET_FEEDBACK.has(state.feedback.kind) ? null : feedback;
+  // The last action's message (if it is worth showing) replaces the live readout until the next move.
+  const shownFeedback = state.feedback && QUIET_FEEDBACK.has(state.feedback.kind) ? null : feedback;
   const primary = primaryAction(state);
   const range = selectionRange(state.selection);
   const hl = (k: ControlKey) => highlight.includes(k);
@@ -114,31 +115,7 @@ export function GameBoard({ state, dispatch, reduceMotion, highlight = [], compa
           use each once
         </Text>
       </View>
-      <View style={[styles.trayRow, { gap: trayGap }]}>
-        {puzzle.sources.map((s) => {
-          const where = sourceStatus(s.id);
-          const available = where === 'tray';
-          const label = pieceA11yLabel(state, s.id);
-          return (
-            <View key={s.id} style={{ alignItems: 'center', width: pieceW }}>
-              <Tap
-                testID={`tray-${s.id}`}
-                onPress={() => dispatch({ type: 'insertPiece', pieceId: s.id })}
-                disabled={!available}
-                accessibilityLabel={available ? label : `${label}, ${where === 'bench' ? 'in the equation' : 'forged into another piece'}`}
-                accessibilityHint={available ? 'Places this number on the bench' : undefined}
-                style={[styles.pieceTap, hl(`piece:${s.id}`) && styles.spotlight]}
-              >
-                <PieceShape label={pieceValueText(s)} look={available ? 'source' : 'socket'} width={pieceW} />
-              </Tap>
-              <Text style={styles.slotNote} maxFontSizeMultiplier={1.2} importantForAccessibility="no">
-                {available ? ' ' : where === 'bench' ? 'placed' : 'forged'}
-              </Text>
-            </View>
-          );
-        })}
-      </View>
-
+      {/* Newly forged pieces sit above the original five. */}
       {forgedInTray.length > 0 && (
         <View style={styles.forgedRow} accessibilityLabel="Forged pieces">
           {forgedInTray.map((id) => {
@@ -180,6 +157,30 @@ export function GameBoard({ state, dispatch, reduceMotion, highlight = [], compa
           })}
         </View>
       )}
+      <View style={[styles.trayRow, { gap: trayGap }]}>
+        {puzzle.sources.map((s) => {
+          const where = sourceStatus(s.id);
+          const available = where === 'tray';
+          const label = pieceA11yLabel(state, s.id);
+          return (
+            <View key={s.id} style={{ alignItems: 'center', width: pieceW }}>
+              <Tap
+                testID={`tray-${s.id}`}
+                onPress={() => dispatch({ type: 'insertPiece', pieceId: s.id })}
+                disabled={!available}
+                accessibilityLabel={available ? label : `${label}, ${where === 'bench' ? 'in the equation' : 'forged into another piece'}`}
+                accessibilityHint={available ? 'Places this number on the bench' : undefined}
+                style={[styles.pieceTap, hl(`piece:${s.id}`) && styles.spotlight]}
+              >
+                <PieceShape label={pieceValueText(s)} look={available ? 'source' : 'socket'} width={pieceW} />
+              </Tap>
+              <Text style={styles.slotNote} maxFontSizeMultiplier={1.2} importantForAccessibility="no">
+                {available ? ' ' : where === 'bench' ? 'placed' : 'forged'}
+              </Text>
+            </View>
+          );
+        })}
+      </View>
     </>
   );
 
@@ -221,13 +222,12 @@ export function GameBoard({ state, dispatch, reduceMotion, highlight = [], compa
         </View>
         <ForgeBurst trigger={burst} reduce={reduceMotion} />
       </Pressable>
-      <Readout message={readout} />
+      <Readout message={shownFeedback ?? readout} />
     </Animated.View>
   );
 
   const toolsArea = (
     <>
-      <FeedbackBanner message={banner} />
       <View style={styles.toolRow}>
         {OPS.map((op) => (
           <Slot key={op} on={hl(`op:${op}`)}>
@@ -303,9 +303,9 @@ export function GameBoard({ state, dispatch, reduceMotion, highlight = [], compa
         ]}
       >
         <View style={styles.actionInner}>
-          <Icon name={primary === 'check' ? 'seal' : 'spark'} color={primary === 'check' ? palette.brassInk : palette.chalk} size={20} />
+          <Icon name={primary === 'check' ? 'seal' : 'spark'} color={palette.brassInk} size={20} />
           <View>
-            <Text style={[styles.actionText, primary === 'check' && { color: palette.brassInk }]} maxFontSizeMultiplier={1.4}>
+            <Text style={styles.actionText} maxFontSizeMultiplier={1.4}>
               {primary === 'check' ? 'Check' : 'Forge'}
             </Text>
             {range && (
@@ -324,10 +324,10 @@ export function GameBoard({ state, dispatch, reduceMotion, highlight = [], compa
       <View style={styles.wideRoot}>
         <ScrollView style={{ width: contentWidth, flexGrow: 0 }} contentContainerStyle={styles.wideColumn}>
           {targetArea}
-          {trayArea}
+          {benchArea}
         </ScrollView>
         <View style={[styles.wideRight, { width: contentWidth }]}>
-          {benchArea}
+          {trayArea}
           <View style={styles.wideTools}>{toolsArea}</View>
         </View>
       </View>
@@ -340,12 +340,14 @@ export function GameBoard({ state, dispatch, reduceMotion, highlight = [], compa
         <View style={[styles.column, { width: contentWidth }]}>
           {targetArea}
           {benchArea}
-          {trayArea}
         </View>
       </ScrollView>
 
-      {/* Tools stay anchored at the bottom so they never move while the bench grows. */}
-      <View style={[styles.tools, { width: contentWidth }]}>{toolsArea}</View>
+      {/* Pieces and tools stay anchored at the bottom so they never move while the equation grows. */}
+      <View style={[styles.tools, { width: contentWidth }]}>
+        {trayArea}
+        {toolsArea}
+      </View>
     </View>
   );
 }
@@ -400,20 +402,6 @@ function Readout({ message }: { message: Message }) {
         style={[styles.readoutText, { color: TONE_COLOR[message.tone] }, message.text.startsWith('=') && styles.readoutValue]}
         maxFontSizeMultiplier={1.5}
       >
-        {message.text}
-      </Text>
-    </View>
-  );
-}
-
-function FeedbackBanner({ message }: { message: Message | null }) {
-  if (!message) return null;
-  const icon = message.tone === 'good' ? 'check' : message.tone === 'issue' ? 'info' : 'spark';
-  const color = message.tone === 'good' ? colors.good : message.tone === 'issue' ? colors.issue : palette.ember;
-  return (
-    <View style={[styles.banner, { borderColor: color }]} accessibilityLiveRegion="polite">
-      <Icon name={icon} size={18} color={color} />
-      <Text style={styles.bannerText} maxFontSizeMultiplier={1.5}>
         {message.text}
       </Text>
     </View>
@@ -552,24 +540,12 @@ const styles = StyleSheet.create({
   },
   readoutText: { fontFamily: fonts.medium, fontSize: 14, flexShrink: 1 },
   readoutValue: { fontFamily: fonts.bold, fontSize: 18, fontVariant: ['tabular-nums'] },
-  banner: {
-    minHeight: 48,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.sm,
-    paddingHorizontal: space.md,
-    paddingVertical: space.xs,
-    borderRadius: radius.md,
-    borderWidth: 1.5,
-    backgroundColor: palette.steel,
-  },
-  bannerText: { fontFamily: fonts.medium, fontSize: 14, color: palette.chalk, flexShrink: 1, lineHeight: 19 },
   toolRow: { flexDirection: 'row', gap: space.xs + 2 },
   slot: { flex: 1, minWidth: 0 },
   action: { minHeight: 56, borderRadius: radius.lg, justifyContent: 'center', marginTop: space.xs },
-  forgeAction: { backgroundColor: palette.flux },
-  checkAction: { backgroundColor: palette.brass },
+  forgeAction: { backgroundColor: palette.brass, borderWidth: 1.5, borderColor: palette.brassDeep },
+  checkAction: { backgroundColor: palette.brass, borderWidth: 1.5, borderColor: palette.brassDeep },
   actionInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.sm },
-  actionText: { fontFamily: fonts.bold, fontSize: 18, color: palette.chalk },
-  actionSub: { fontFamily: fonts.medium, fontSize: 11, color: palette.chalk, marginTop: -2 },
+  actionText: { fontFamily: fonts.bold, fontSize: 18, color: palette.brassInk },
+  actionSub: { fontFamily: fonts.medium, fontSize: 11, color: palette.brassInk, marginTop: -2 },
 });

@@ -15,8 +15,8 @@ A bright, clever workshop at night: blueprint paper, ceramic and brass component
 | `blueprint` / `blueprintLine` | #15406A / #6FB2E8 | Target card |
 | **`coolant`** | #2EC4B6 | *Cool*: available pieces, toggles |
 | **`ember`** | #FFB03B | *Warm*: selection, cursor, focus, primary buttons |
-| **`flux`** | #FF6A3D | *Hot*: the Forge action and forge burst |
-| **`brass`** | #E9C46A | *Done*: forged pieces, Check, the seal |
+| **`flux`** | #FF6A3D | *Hot*: the forge burst |
+| **`brass`** | #E9C46A | *Done*: forged pieces, the Forge/Check button, the seal |
 | `ceramic` / `ceramicEdge` / `ceramicShade` | #F5F0E6 / #D9CFBD / #E9E1D2 | Bench surface, piece faces |
 | `graphite` | #1E2430 | Text on light surfaces |
 | `mist` | #AEB8C7 | Secondary text on dark |
@@ -56,7 +56,7 @@ Dynamic Type: UI text scales up to 1.3–1.6× (`maxFontSizeMultiplier`). Number
 | `Button` | ui/controls.tsx | primary (ember) / forge (flux) / secondary / ghost |
 | `Seal` | ui/Seal.tsx | Completion stamp |
 | `Logo`, `Icon` | ui/ | Original artwork drawn in code |
-| `GameBoard` | features/game/GameBoard.tsx | Tray, bench, readout, feedback banner, tools. The tools are anchored so they never move while building. |
+| `GameBoard` | features/game/GameBoard.tsx | Target and equation (with messages in its grey readout strip) at the top; forged pieces, the five pieces and the tools anchored at the bottom so they never move while building. |
 | `ProofPanel` | features/game/ProofPanel.tsx | Seal, proof, all-five checklist, time/forges/undos, next action |
 | `AdSlot` | features/ads/AdSlot.tsx | Grey, dashed, labelled "Advertisement". Deliberately unlike any game element. |
 
