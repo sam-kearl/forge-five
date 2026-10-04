@@ -39,6 +39,8 @@ export interface Puzzle {
   readonly easiest: Expr;
   readonly metrics: QualityMetrics;
   readonly strategy: GenerationStrategy;
+  /** The level it was generated for (absent on puzzles saved before levels existed). */
+  readonly level?: number;
 }
 
 /** Order-independent signature used to avoid repeating near-identical puzzles. */
@@ -68,4 +70,6 @@ export function isNearDuplicate(a: PuzzleSignature, b: PuzzleSignature): boolean
   return shared >= 4;
 }
 
-export const puzzleIdForSeed = (seed: number) => `F5-${(seed >>> 0).toString(36)}`;
+/** Shareable id: the level (if any) plus the seed, which together reproduce the puzzle exactly. */
+export const puzzleIdForSeed = (seed: number, level?: number) =>
+  level === undefined ? `F5-${(seed >>> 0).toString(36)}` : `F5-L${level}-${(seed >>> 0).toString(36)}`;

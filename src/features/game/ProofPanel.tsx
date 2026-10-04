@@ -48,6 +48,11 @@ export function ProofPanel({
       <Text style={styles.title} accessibilityRole="header" maxFontSizeMultiplier={1.4}>
         Solved!
       </Text>
+      {puzzle.id !== 'tutorial' && (
+        <Text style={styles.puzzleId} maxFontSizeMultiplier={1.3}>
+          Puzzle {puzzle.id}
+        </Text>
+      )}
       <View style={styles.proofCard} accessible accessibilityLabel={`Proof: ${spokenProof}`}>
         <Text style={styles.proofLabel}>PROOF</Text>
         <Text style={styles.proof} maxFontSizeMultiplier={1.6} adjustsFontSizeToFit numberOfLines={3}>
@@ -110,6 +115,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 const styles = StyleSheet.create({
   wrap: { alignItems: 'center', padding: space.lg, gap: space.md, maxWidth: 560, width: '100%', alignSelf: 'center' },
   title: { fontFamily: fonts.black, fontSize: 30, color: palette.chalk },
+  puzzleId: { fontFamily: fonts.medium, fontSize: 13, color: palette.mist, letterSpacing: 0.5, marginTop: -space.sm },
   proofCard: {
     alignSelf: 'stretch',
     backgroundColor: palette.ceramic,

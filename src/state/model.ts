@@ -2,7 +2,7 @@
  * Pure models for locally stored settings and statistics. No React here, so
  * the persistence behaviour is unit-tested directly.
  */
-import { opsUsed, type Expr, type Op, type PlayStats } from '../engine';
+import { DEFAULT_LEVEL, LEVELS, opsUsed, type Expr, type Op, type PlayStats } from '../engine';
 
 // ---------------------------------------------------------------------------
 // Settings
@@ -15,9 +15,11 @@ export interface Settings {
   sound: boolean;
   haptics: boolean;
   motion: MotionPreference;
+  /** Chosen level (free choice). Missing on settings saved before levels existed. */
+  level?: number;
 }
 
-export const DEFAULT_SETTINGS: Settings = { version: 1, sound: true, haptics: true, motion: 'system' };
+export const DEFAULT_SETTINGS: Settings = { version: 1, sound: true, haptics: true, motion: 'system', level: DEFAULT_LEVEL };
 
 export function isSettings(v: unknown): v is Settings {
   const s = v as Settings;
@@ -26,9 +28,14 @@ export function isSettings(v: unknown): v is Settings {
     s.version === 1 &&
     typeof s.sound === 'boolean' &&
     typeof s.haptics === 'boolean' &&
-    (s.motion === 'system' || s.motion === 'reduced' || s.motion === 'full')
+    (s.motion === 'system' || s.motion === 'reduced' || s.motion === 'full') &&
+    (s.level === undefined || typeof s.level === 'number')
   );
 }
+
+/** The level to play: the saved choice if it still exists, otherwise the default. */
+export const selectedLevel = (s: Settings): number =>
+  s.level !== undefined && LEVELS.some((l) => l.id === s.level) ? s.level : DEFAULT_LEVEL;
 
 export const shouldReduceMotion = (pref: MotionPreference, systemReduced: boolean) =>
   pref === 'reduced' || (pref === 'system' && systemReduced);

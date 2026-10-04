@@ -88,6 +88,8 @@ export interface GenerateOptions {
   config?: GameConfig;
   /** Recently played puzzles; near-identical candidates are skipped. */
   recent?: readonly PuzzleSignature[];
+  /** Level the puzzle is for; recorded on the puzzle and in its id. Pass the matching `config`. */
+  level?: number;
 }
 
 export interface GenerationReport {
@@ -214,7 +216,8 @@ export function generatePuzzle(options: GenerateOptions): GenerationResult {
       }
 
       const puzzle: Puzzle = {
-        id: puzzleIdForSeed(options.seed),
+        id: puzzleIdForSeed(options.seed, options.level),
+        level: options.level,
         seed: options.seed >>> 0,
         target,
         sources: rng.shuffle(pieces),
@@ -238,7 +241,8 @@ export function generatePuzzle(options: GenerateOptions): GenerationResult {
     if ('unsolvable' in q) continue;
     return {
       puzzle: {
-        id: puzzleIdForSeed(options.seed),
+        id: puzzleIdForSeed(options.seed, options.level),
+        level: options.level,
         seed: options.seed >>> 0,
         target: f.target,
         sources: rng.shuffle(pieces),

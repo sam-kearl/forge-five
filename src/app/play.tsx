@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { levelOfPuzzle } from '../engine';
 import { GameBoard } from '../features/game/GameBoard';
 import { ProofPanel } from '../features/game/ProofPanel';
 import { useGameSession } from '../features/game/useGameSession';
@@ -41,11 +42,12 @@ export default function Play() {
           </View>
         </Tap>
         <Text
-          style={styles.puzzleId}
-          accessibilityLabel={state ? `Puzzle ${state.puzzle.id}` : 'Loading puzzle'}
+          style={styles.levelTitle}
+          accessibilityRole="header"
+          accessibilityLabel={state ? levelOfPuzzle(state.puzzle).name : 'Loading puzzle'}
           maxFontSizeMultiplier={1.3}
         >
-          {state ? `Puzzle ${state.puzzle.id}` : ''}
+          {state ? levelOfPuzzle(state.puzzle).name : ''}
         </Text>
         {state?.status === 'playing' ? (
           <Tap
@@ -84,7 +86,7 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: space.sm, minHeight: 52 },
   headerBtn: { borderRadius: 24 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  puzzleId: { flex: 1, textAlign: 'center', fontFamily: fonts.medium, fontSize: 13, color: palette.mist, letterSpacing: 0.5 },
+  levelTitle: { flex: 1, textAlign: 'center', fontFamily: fonts.bold, fontSize: 17, color: palette.chalk },
   newBtn: { borderRadius: radius.pill, paddingHorizontal: space.md, borderWidth: 1, borderColor: palette.steelLine },
   newBtnConfirm: { backgroundColor: palette.ember, borderColor: palette.ember },
   newInner: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6 },

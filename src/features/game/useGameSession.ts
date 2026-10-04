@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState as RNAppState } from 'react-native';
 import {
+  configForLevel,
   createGame,
   gameReducer,
   generatePuzzle,
   INITIAL_CONFIG,
+  levelOfPuzzle,
   mixSeed,
   signatureOf,
   type GameAction,
@@ -14,7 +16,7 @@ import {
 } from '../../engine';
 import { loadJson, saveJson, STORAGE_KEYS } from '../../services/storage';
 import { useApp } from '../../state/AppContext';
-import { recordDeal, recordSkip, recordSolve } from '../../state/model';
+import { recordDeal, recordSkip, recordSolve, selectedLevel } from '../../state/model';
 import { cuesFor } from './cues';
 
 function isSavedGame(v: unknown): v is GameState {
@@ -25,8 +27,8 @@ function isSavedGame(v: unknown): v is GameState {
 let seedCounter = 0;
 const freshSeed = () => mixSeed(Date.now(), ++seedCounter, Math.floor(Math.random() * 0xffffffff));
 
-function makePuzzle(recent: readonly PuzzleSignature[]): Puzzle {
-  const { puzzle, report } = generatePuzzle({ seed: freshSeed(), recent });
+function makePuzzle(recent: readonly PuzzleSignature[], level: number): Puzzle {
+  const { puzzle, report } = generatePuzzle({ seed: freshSeed(), recent, level, config: configForLevel(level) });
   if (__DEV__ && report.tier > 0) console.log('[forge] puzzle generation relaxed', report);
   return puzzle;
 }
@@ -37,7 +39,12 @@ function makePuzzle(recent: readonly PuzzleSignature[]): Puzzle {
  * statistics and fires sound/haptic cues.
  */
 export function useGameSession() {
-  const { services, updateStats, cue } = useApp();
+  const { services, updateStats, cue, settings } = useApp();
+  const level = selectedLevel(settings);
+  const levelRef = useRef(level);
+  useEffect(() => {
+    levelRef.current = level;
+  }, [level]);
   const [state, setState] = useState<GameState | null>(null);
   const stateRef = useRef<GameState | null>(null);
   const recentRef = useRef<PuzzleSignature[]>([]);
@@ -58,7 +65,7 @@ export function useGameSession() {
   const preloadNext = useCallback(() => {
     // Defer so it never competes with an animation or a tap.
     setTimeout(() => {
-      if (!nextRef.current) nextRef.current = makePuzzle(recentRef.current);
+      if (!nextRef.current || nextRef.current.level !== levelRef.current) nextRef.current = makePuzzle(recentRef.current, levelRef.current);
     }, 600);
   }, []);
 
@@ -88,12 +95,13 @@ export function useGameSession() {
       );
       const saved = await loadJson<GameState | null>(services.storage, STORAGE_KEYS.game, null);
       if (!alive) return;
-      if (saved && isSavedGame(saved) && saved.status === 'playing') {
+      // Resume an unfinished puzzle only if it belongs to the level the player has chosen.
+      if (saved && isSavedGame(saved) && saved.status === 'playing' && levelOfPuzzle(saved.puzzle).id === levelRef.current) {
         stateRef.current = saved;
         setState(saved);
         preloadNext();
       } else {
-        startPuzzle(makePuzzle(recentRef.current));
+        startPuzzle(makePuzzle(recentRef.current, levelRef.current));
       }
     })();
     return () => {
@@ -140,7 +148,8 @@ export function useGameSession() {
   const nextPuzzle = useCallback(() => {
     const cur = stateRef.current;
     if (cur && cur.status === 'playing' && cur.play.moves > 0) updateStats(recordSkip);
-    const p = nextRef.current ?? makePuzzle(recentRef.current);
+    const preloaded = nextRef.current?.level === levelRef.current ? nextRef.current : null;
+    const p = preloaded ?? makePuzzle(recentRef.current, levelRef.current);
     nextRef.current = null;
     startPuzzle(p);
   }, [startPuzzle, updateStats]);

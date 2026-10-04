@@ -21,6 +21,7 @@ import {
   recordDeal,
   recordSkip,
   recordSolve,
+  selectedLevel,
   shouldReduceMotion,
   visibleStreak,
 } from '../state/model';
@@ -150,6 +151,15 @@ describe('settings', () => {
     expect(isSettings({ ...DEFAULT_SETTINGS, motion: 'wild' })).toBe(false);
     expect(isSettings(null)).toBe(false);
   });
+  it('accepts settings saved before levels existed and defaults them to Level 1', () => {
+    const old = { version: 1, sound: true, haptics: false, motion: 'system' };
+    expect(isSettings(old)).toBe(true);
+    expect(selectedLevel(old as typeof DEFAULT_SETTINGS)).toBe(1);
+    expect(selectedLevel({ ...DEFAULT_SETTINGS, level: 2 })).toBe(2);
+    // A level that no longer exists falls back to the default.
+    expect(selectedLevel({ ...DEFAULT_SETTINGS, level: 42 })).toBe(1);
+  });
+
   it('resolves reduced motion from preference and system', () => {
     expect(shouldReduceMotion('system', true)).toBe(true);
     expect(shouldReduceMotion('system', false)).toBe(false);

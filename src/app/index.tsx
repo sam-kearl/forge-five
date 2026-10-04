@@ -3,7 +3,8 @@ import { router } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 import { AdSlot } from '../features/ads/AdSlot';
 import { useApp } from '../state/AppContext';
-import { localDay, visibleStreak } from '../state/model';
+import { LEVELS } from '../engine';
+import { localDay, selectedLevel, visibleStreak } from '../state/model';
 import { Button, Tap } from '../ui/controls';
 import { Icon, type IconName } from '../ui/Icon';
 import { Logo } from '../ui/Logo';
@@ -11,7 +12,8 @@ import { Screen } from '../ui/Screen';
 import { fonts, palette, radius, space } from '../ui/theme';
 
 export default function Home() {
-  const { stats, tutorialCompleted } = useApp();
+  const { stats, tutorialCompleted, settings, updateSettings } = useApp();
+  const level = selectedLevel(settings);
   const [today] = useState(() => localDay(Date.now()));
   const streak = visibleStreak(stats, today);
 
@@ -22,6 +24,32 @@ export default function Home() {
         <Text style={styles.tagline} maxFontSizeMultiplier={1.4}>
           Five numbers. One target. Forge the answer.
         </Text>
+      </View>
+
+      {/* Levels are a free choice; the game deals puzzles for the selected one. */}
+      <View style={styles.levels} accessibilityRole="radiogroup" accessibilityLabel="Level">
+        {LEVELS.map((l) => {
+          const on = l.id === level;
+          return (
+            <Tap
+              key={l.id}
+              testID={`level-${l.id}`}
+              onPress={() => updateSettings({ level: l.id })}
+              selected={on}
+              accessibilityLabel={`${l.name}, numbers ${l.min} to ${l.max}`}
+              style={[styles.level, on && styles.levelOn]}
+            >
+              <View style={styles.levelInner}>
+                <Text style={[styles.levelName, on && styles.levelNameOn]} maxFontSizeMultiplier={1.4}>
+                  {l.name}
+                </Text>
+                <Text style={[styles.levelRange, on && styles.levelNameOn]} maxFontSizeMultiplier={1.4}>
+                  {l.min}–{l.max}
+                </Text>
+              </View>
+            </Tap>
+          );
+        })}
       </View>
 
       <View style={styles.actions}>
@@ -95,6 +123,20 @@ const styles = StyleSheet.create({
   hero: { alignItems: 'center', marginTop: space.xxl, marginBottom: space.xl },
   tagline: { fontFamily: fonts.medium, fontSize: 16, color: palette.mist, marginTop: space.sm, textAlign: 'center' },
   actions: { gap: space.md },
+  levels: { flexDirection: 'row', gap: space.sm, marginBottom: space.md },
+  level: {
+    flex: 1,
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    borderColor: palette.steelLine,
+    backgroundColor: palette.steel,
+    minHeight: 60,
+  },
+  levelOn: { borderColor: palette.brassDeep, backgroundColor: palette.brass },
+  levelInner: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: space.sm },
+  levelName: { fontFamily: fonts.bold, fontSize: 16, color: palette.chalk },
+  levelRange: { fontFamily: fonts.medium, fontSize: 13, color: palette.mist, fontVariant: ['tabular-nums'] },
+  levelNameOn: { color: palette.brassInk },
   summary: { alignItems: 'center', marginTop: space.lg },
   summaryText: { fontFamily: fonts.regular, fontSize: 15, color: palette.mist },
   summaryNum: { fontFamily: fonts.bold, color: palette.brass },

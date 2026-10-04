@@ -9,6 +9,7 @@ export * from './expr';
 export * from './format';
 export * from './game';
 export * from './generator';
+export * from './levels';
 export * from './parse';
 export * from './pieces';
 export * from './puzzle';
