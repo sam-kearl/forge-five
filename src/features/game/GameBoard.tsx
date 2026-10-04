@@ -303,7 +303,7 @@ export function GameBoard({ state, dispatch, reduceMotion, highlight = [], compa
         ]}
       >
         <View style={styles.actionInner}>
-          <Icon name={primary === 'check' ? 'seal' : 'spark'} color={palette.brassInk} size={20} />
+          <Icon name={primary === 'check' ? 'seal' : 'forge'} color={palette.brassInk} size={24} strokeWidth={2.2} />
           <View>
             <Text style={styles.actionText} maxFontSizeMultiplier={1.4}>
               {primary === 'check' ? 'Check' : 'Forge'}

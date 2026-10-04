@@ -21,7 +21,8 @@ export type IconName =
   | 'close'
   | 'check'
   | 'info'
-  | 'play';
+  | 'play'
+  | 'forge';
 
 const PATHS: Record<IconName, string[]> = {
   undo: ['M9 7 L4 12 L9 17', 'M4 12 H14 a5 5 0 0 1 0 10 H11'],
@@ -49,6 +50,21 @@ const PATHS: Record<IconName, string[]> = {
   check: ['M5 12.5 L10 17.5 L19 7'],
   info: ['M12 11 V17', 'M12 7.5 V8'],
   play: ['M8 5 L19 12 L8 19 Z'],
+  // Two pieces flow together into one hot, solid piece (drawn by FILLED below) with sparks rising.
+  forge: [
+    'M2 5 L3.5 3.5 H5.5 L7 5 L5.5 6.5 H3.5 Z',
+    'M2 19 L3.5 17.5 H5.5 L7 19 L5.5 20.5 H3.5 Z',
+    'M7.5 6.5 L11 12 L7.5 17.5',
+    'M11 12 H12.5',
+    'M17.5 2 V4.5',
+    'M21.5 3 L20.3 5',
+    'M13.5 3 L14.7 5',
+  ],
+};
+
+/** Solid shapes, with an optional seam drawn in the accent colour (the glow of hot metal). */
+const FILLED: Partial<Record<IconName, { solid: string; seam?: string }>> = {
+  forge: { solid: 'M12.5 12 L15 7.5 H20 L22.5 12 L20 16.5 H15 Z', seam: 'M15.5 12 H19.5' },
 };
 
 const CIRCLED: Partial<Record<IconName, boolean>> = { help: true, info: true };
@@ -58,12 +74,16 @@ export function Icon({
   size = 22,
   color = '#fff',
   strokeWidth = 2,
+  accent = '#F6DC8E',
 }: {
   name: IconName;
   size?: number;
   color?: string;
   strokeWidth?: number;
+  /** Colour of glowing details such as the forge icon's seam. */
+  accent?: string;
 }) {
+  const filled = FILLED[name];
   return (
     <View accessible={false} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden pointerEvents="none">
       <Svg width={size} height={size} viewBox="0 0 24 24">
@@ -79,6 +99,12 @@ export function Icon({
             fill={name === 'play' ? color : 'none'}
           />
         ))}
+        {filled && (
+          <>
+            <Path d={filled.solid} fill={color} stroke={color} strokeWidth={strokeWidth} strokeLinejoin="round" />
+            {filled.seam && <Path d={filled.seam} stroke={accent} strokeWidth={strokeWidth * 0.8} strokeLinecap="round" />}
+          </>
+        )}
       </Svg>
     </View>
   );

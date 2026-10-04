@@ -24,7 +24,7 @@ export const palette = {
   flux: '#FF6A3D', // hot: forging moment
   brass: '#E9C46A', // done: forged pieces, solved
   brassDeep: '#B8892F',
-  brassInk: '#3A2A08',
+  brassInk: '#2A1D04',
   ceramic: '#F5F0E6', // bench surface and piece faces
   ceramicEdge: '#D9CFBD',
   ceramicShade: '#E9E1D2',

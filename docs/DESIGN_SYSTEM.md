@@ -55,7 +55,7 @@ Dynamic Type: UI text scales up to 1.3–1.6× (`maxFontSizeMultiplier`). Number
 | `ToolKey` | ui/controls.tsx | Steel or blueprint key, symbol or icon. Height scales with the layout. |
 | `Button` | ui/controls.tsx | primary (ember) / forge (flux) / secondary / ghost |
 | `Seal` | ui/Seal.tsx | Completion stamp |
-| `Logo`, `Icon` | ui/ | Original artwork drawn in code |
+| `Logo`, `Icon` | ui/ | Original artwork drawn in code. The Forge button's icon shows two pieces flowing into one solid, hot piece with a glowing seam and rising sparks. |
 | `GameBoard` | features/game/GameBoard.tsx | Target and equation (with messages in its grey readout strip) at the top; forged pieces, the five pieces and the tools anchored at the bottom so they never move while building. |
 | `ProofPanel` | features/game/ProofPanel.tsx | Seal, proof, all-five checklist, time/forges/undos, next action |
 | `AdSlot` | features/ads/AdSlot.tsx | Grey, dashed, labelled "Advertisement". Deliberately unlike any game element. |
