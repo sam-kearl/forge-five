@@ -31,6 +31,11 @@ export interface QualityThresholds {
   rejectSumOfAll: boolean;
   /** Minimum number of distinct (canonical) solutions required. */
   minDistinctSolutions: number;
+  /**
+   * When set, only accept puzzles whose distinct-solution count falls in this
+   * inclusive range. This is how difficulty is chosen (see levels.ts).
+   */
+  distinctSolutionsRange?: { min: number; max: number };
   /** Stop enumerating solutions after this many raw trees (keeps evaluation fast). */
   enumerationLimit: number;
 }
@@ -123,7 +128,8 @@ export const INITIAL_CONFIG: GameConfig = Object.freeze({
     targetEchoCollapseEffort: 5,
     rejectSumOfAll: true,
     minDistinctSolutions: 2,
-    enumerationLimit: 400,
+    // High enough that real puzzles are counted exactly (the busiest sampled puzzle needed far fewer).
+    enumerationLimit: 3000,
   }),
   generator: Object.freeze({
     attemptsPerTier: 400,

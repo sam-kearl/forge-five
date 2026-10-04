@@ -1,4 +1,5 @@
 import type { Expr } from './expr';
+import type { Difficulty } from './levels';
 import type { SourcePiece } from './pieces';
 
 export type GenerationStrategy = 'constructive' | 'validated-random' | 'fallback';
@@ -41,6 +42,8 @@ export interface Puzzle {
   readonly strategy: GenerationStrategy;
   /** The level it was generated for (absent on puzzles saved before levels existed). */
   readonly level?: number;
+  /** The difficulty it was generated for, if one was requested. */
+  readonly difficulty?: Difficulty;
 }
 
 /** Order-independent signature used to avoid repeating near-identical puzzles. */
@@ -71,5 +74,7 @@ export function isNearDuplicate(a: PuzzleSignature, b: PuzzleSignature): boolean
 }
 
 /** Shareable id: the level (if any) plus the seed, which together reproduce the puzzle exactly. */
-export const puzzleIdForSeed = (seed: number, level?: number) =>
-  level === undefined ? `F5-${(seed >>> 0).toString(36)}` : `F5-L${level}-${(seed >>> 0).toString(36)}`;
+export const puzzleIdForSeed = (seed: number, level?: number, difficulty?: Difficulty) => {
+  const tag = (level !== undefined ? `L${level}` : '') + (difficulty ? difficulty[0].toUpperCase() : '');
+  return tag ? `F5-${tag}-${(seed >>> 0).toString(36)}` : `F5-${(seed >>> 0).toString(36)}`;
+};

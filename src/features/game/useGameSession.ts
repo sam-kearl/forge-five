@@ -5,10 +5,12 @@ import {
   createGame,
   gameReducer,
   generatePuzzle,
+  generatePuzzleAsync,
   INITIAL_CONFIG,
   levelOfPuzzle,
   mixSeed,
   signatureOf,
+  type Difficulty,
   type GameAction,
   type GameState,
   type Puzzle,
@@ -16,7 +18,7 @@ import {
 } from '../../engine';
 import { loadJson, saveJson, STORAGE_KEYS } from '../../services/storage';
 import { useApp } from '../../state/AppContext';
-import { recordDeal, recordSkip, recordSolve, selectedLevel } from '../../state/model';
+import { recordDeal, recordSkip, recordSolve, selectedDifficulty, selectedLevel } from '../../state/model';
 import { cuesFor } from './cues';
 
 function isSavedGame(v: unknown): v is GameState {
@@ -27,8 +29,31 @@ function isSavedGame(v: unknown): v is GameState {
 let seedCounter = 0;
 const freshSeed = () => mixSeed(Date.now(), ++seedCounter, Math.floor(Math.random() * 0xffffffff));
 
-function makePuzzle(recent: readonly PuzzleSignature[], level: number): Puzzle {
-  const { puzzle, report } = generatePuzzle({ seed: freshSeed(), recent, level, config: configForLevel(level) });
+interface Choice {
+  level: number;
+  difficulty: Difficulty;
+}
+
+const optionsFor = (recent: readonly PuzzleSignature[], c: Choice) => ({
+  seed: freshSeed(),
+  recent,
+  level: c.level,
+  difficulty: c.difficulty,
+  config: configForLevel(c.level, c.difficulty),
+});
+
+const matches = (p: Puzzle | null | undefined, c: Choice) => !!p && levelOfPuzzle(p).id === c.level && p.difficulty === c.difficulty;
+
+/** Synchronous generation: only used when no preloaded puzzle is ready yet. */
+function makePuzzle(recent: readonly PuzzleSignature[], c: Choice): Puzzle {
+  const { puzzle, report } = generatePuzzle(optionsFor(recent, c));
+  if (__DEV__ && report.tier > 0) console.log('[forge] puzzle generation relaxed', report);
+  return puzzle;
+}
+
+/** Generation spread across frames so it never blocks taps or animations. */
+async function makePuzzleAsync(recent: readonly PuzzleSignature[], c: Choice): Promise<Puzzle> {
+  const { puzzle, report } = await generatePuzzleAsync(optionsFor(recent, c));
   if (__DEV__ && report.tier > 0) console.log('[forge] puzzle generation relaxed', report);
   return puzzle;
 }
@@ -41,10 +66,11 @@ function makePuzzle(recent: readonly PuzzleSignature[], level: number): Puzzle {
 export function useGameSession() {
   const { services, updateStats, cue, settings } = useApp();
   const level = selectedLevel(settings);
-  const levelRef = useRef(level);
+  const difficulty = selectedDifficulty(settings);
+  const choiceRef = useRef<Choice>({ level, difficulty });
   useEffect(() => {
-    levelRef.current = level;
-  }, [level]);
+    choiceRef.current = { level, difficulty };
+  }, [level, difficulty]);
   const [state, setState] = useState<GameState | null>(null);
   const stateRef = useRef<GameState | null>(null);
   const recentRef = useRef<PuzzleSignature[]>([]);
@@ -64,8 +90,11 @@ export function useGameSession() {
 
   const preloadNext = useCallback(() => {
     // Defer so it never competes with an animation or a tap.
-    setTimeout(() => {
-      if (!nextRef.current || nextRef.current.level !== levelRef.current) nextRef.current = makePuzzle(recentRef.current, levelRef.current);
+    setTimeout(async () => {
+      const choice = choiceRef.current;
+      if (matches(nextRef.current, choice)) return;
+      const p = await makePuzzleAsync(recentRef.current, choice);
+      if (matches(p, choiceRef.current)) nextRef.current = p;
     }, 600);
   }, []);
 
@@ -96,12 +125,13 @@ export function useGameSession() {
       const saved = await loadJson<GameState | null>(services.storage, STORAGE_KEYS.game, null);
       if (!alive) return;
       // Resume an unfinished puzzle only if it belongs to the level the player has chosen.
-      if (saved && isSavedGame(saved) && saved.status === 'playing' && levelOfPuzzle(saved.puzzle).id === levelRef.current) {
+      if (saved && isSavedGame(saved) && saved.status === 'playing' && matches(saved.puzzle, choiceRef.current)) {
         stateRef.current = saved;
         setState(saved);
         preloadNext();
       } else {
-        startPuzzle(makePuzzle(recentRef.current, levelRef.current));
+        const p = await makePuzzleAsync(recentRef.current, choiceRef.current);
+        if (alive) startPuzzle(p);
       }
     })();
     return () => {
@@ -148,8 +178,8 @@ export function useGameSession() {
   const nextPuzzle = useCallback(() => {
     const cur = stateRef.current;
     if (cur && cur.status === 'playing' && cur.play.moves > 0) updateStats(recordSkip);
-    const preloaded = nextRef.current?.level === levelRef.current ? nextRef.current : null;
-    const p = preloaded ?? makePuzzle(recentRef.current, levelRef.current);
+    const preloaded = matches(nextRef.current, choiceRef.current) ? nextRef.current : null;
+    const p = preloaded ?? makePuzzle(recentRef.current, choiceRef.current);
     nextRef.current = null;
     startPuzzle(p);
   }, [startPuzzle, updateStats]);

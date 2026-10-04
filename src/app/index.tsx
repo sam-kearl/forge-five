@@ -3,8 +3,8 @@ import { router } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 import { AdSlot } from '../features/ads/AdSlot';
 import { useApp } from '../state/AppContext';
-import { LEVELS } from '../engine';
-import { localDay, selectedLevel, visibleStreak } from '../state/model';
+import { DIFFICULTIES, DIFFICULTY_NAMES, LEVELS } from '../engine';
+import { localDay, selectedDifficulty, selectedLevel, visibleStreak } from '../state/model';
 import { Button, Tap } from '../ui/controls';
 import { Icon, type IconName } from '../ui/Icon';
 import { Logo } from '../ui/Logo';
@@ -14,6 +14,7 @@ import { fonts, palette, radius, space } from '../ui/theme';
 export default function Home() {
   const { stats, tutorialCompleted, settings, updateSettings } = useApp();
   const level = selectedLevel(settings);
+  const difficulty = selectedDifficulty(settings);
   const [today] = useState(() => localDay(Date.now()));
   const streak = visibleStreak(stats, today);
 
@@ -45,6 +46,29 @@ export default function Home() {
                 </Text>
                 <Text style={[styles.levelRange, on && styles.levelNameOn]} maxFontSizeMultiplier={1.4}>
                   {l.min}–{l.max}
+                </Text>
+              </View>
+            </Tap>
+          );
+        })}
+      </View>
+
+      {/* Then a difficulty: how many different ways the puzzle can be solved (fewer = harder). */}
+      <View style={styles.levels} accessibilityRole="radiogroup" accessibilityLabel="Difficulty">
+        {DIFFICULTIES.map((d) => {
+          const on = d === difficulty;
+          return (
+            <Tap
+              key={d}
+              testID={`difficulty-${d}`}
+              onPress={() => updateSettings({ difficulty: d })}
+              selected={on}
+              accessibilityLabel={`${DIFFICULTY_NAMES[d]} difficulty`}
+              style={[styles.level, styles.difficulty, on && styles.levelOn]}
+            >
+              <View style={styles.levelInner}>
+                <Text style={[styles.levelName, on && styles.levelNameOn]} maxFontSizeMultiplier={1.4}>
+                  {DIFFICULTY_NAMES[d]}
                 </Text>
               </View>
             </Tap>
@@ -132,6 +156,7 @@ const styles = StyleSheet.create({
     backgroundColor: palette.steel,
     minHeight: 60,
   },
+  difficulty: { minHeight: 48 },
   levelOn: { borderColor: palette.brassDeep, backgroundColor: palette.brass },
   levelInner: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: space.sm },
   levelName: { fontFamily: fonts.bold, fontSize: 16, color: palette.chalk },

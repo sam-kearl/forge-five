@@ -3,6 +3,7 @@ import { INITIAL_CONFIG, type GameConfig, type QualityThresholds } from './confi
 import { leaf, node, type Expr } from './expr';
 import { sourcePiece, type SourcePiece } from './pieces';
 import { isNearDuplicate, puzzleIdForSeed, type GenerationStrategy, type Puzzle, type PuzzleSignature } from './puzzle';
+import type { Difficulty } from './levels';
 import { evaluatePuzzle, type RejectionReason } from './quality';
 import * as R from './rational';
 import { createRng, type Rng } from './rng';
@@ -90,6 +91,8 @@ export interface GenerateOptions {
   recent?: readonly PuzzleSignature[];
   /** Level the puzzle is for; recorded on the puzzle and in its id. Pass the matching `config`. */
   level?: number;
+  /** Difficulty the puzzle is for; recorded on the puzzle and in its id. Pass the matching `config`. */
+  difficulty?: Difficulty;
 }
 
 export interface GenerationReport {
@@ -126,6 +129,8 @@ function relaxed(q: QualityThresholds, tier: number): QualityThresholds {
     targetEchoCollapseEffort: -1,
     rejectSumOfAll: false,
     minDistinctSolutions: 1,
+    // Last-resort tier: any solvable puzzle in range, whatever its difficulty.
+    distinctSolutionsRange: undefined,
   };
 }
 
@@ -140,11 +145,20 @@ export const FALLBACK_PUZZLES: readonly { values: number[]; target: number }[] =
   { values: [7, 7, 3, 10, 2], target: 16 },
   { values: [16, 5, 4, 3, 6], target: 11 },
   { values: [2, 8, 9, 5, 1], target: 23 },
+  // Small ones, so every level (including 1–12) has fallbacks within its range.
+  { values: [8, 3, 6, 2, 1], target: 9 },
+  { values: [9, 4, 7, 2, 5], target: 11 },
+  { values: [6, 2, 5, 3, 4], target: 7 },
+  { values: [10, 4, 3, 2, 8], target: 12 },
 ];
 
 const TIERS = 3;
 
-export function generatePuzzle(options: GenerateOptions): GenerationResult {
+/**
+ * The generation algorithm as a sequence of steps: it yields between candidate
+ * attempts so callers can run it all at once or spread it across frames.
+ */
+function* generationSteps(options: GenerateOptions): Generator<void, GenerationResult, void> {
   const config = options.config ?? INITIAL_CONFIG;
   const recent = options.recent ?? [];
   const started = Date.now();
@@ -159,6 +173,7 @@ export function generatePuzzle(options: GenerateOptions): GenerationResult {
   for (let tier = 0; tier < TIERS; tier++) {
     const thresholds = relaxed(config.quality, tier);
     for (let a = 0; a < config.generator.attemptsPerTier; a++) {
+      if (attempts > 0) yield;
       attempts++;
       const values = drawSourceValues(rng, config);
       const pieces = values.map((v, i) => sourcePiece(`s${i}`, R.int(v)));
@@ -216,8 +231,9 @@ export function generatePuzzle(options: GenerateOptions): GenerationResult {
       }
 
       const puzzle: Puzzle = {
-        id: puzzleIdForSeed(options.seed, options.level),
+        id: puzzleIdForSeed(options.seed, options.level, options.difficulty),
         level: options.level,
+        difficulty: options.difficulty,
         seed: options.seed >>> 0,
         target,
         sources: rng.shuffle(pieces),
@@ -234,15 +250,21 @@ export function generatePuzzle(options: GenerateOptions): GenerationResult {
   }
 
   // Last resort: a verified hand-made puzzle. Never loops forever.
-  const order = rng.shuffle(FALLBACK_PUZZLES);
+  const inRange = (n: number, min: number, max: number) => n >= min && n <= max;
+  const fitting = FALLBACK_PUZZLES.filter(
+    (f) => inRange(f.target, config.targetMin, config.targetMax) && f.values.every((v) => inRange(v, config.sourceMin, config.sourceMax)),
+  );
+  // Prefer fallbacks inside the level's range; with an unusual config, any verified puzzle beats failing.
+  const order = rng.shuffle(fitting.length > 0 ? fitting : FALLBACK_PUZZLES);
   for (const f of order) {
     const pieces = f.values.map((v, i) => sourcePiece(`s${i}`, R.int(v)));
     const q = evaluatePuzzle(pieces, f.target, config, relaxed(config.quality, 2));
     if ('unsolvable' in q) continue;
     return {
       puzzle: {
-        id: puzzleIdForSeed(options.seed, options.level),
+        id: puzzleIdForSeed(options.seed, options.level, options.difficulty),
         level: options.level,
+        difficulty: options.difficulty,
         seed: options.seed >>> 0,
         target: f.target,
         sources: rng.shuffle(pieces),
@@ -255,4 +277,29 @@ export function generatePuzzle(options: GenerateOptions): GenerationResult {
     };
   }
   throw new Error('No valid puzzle could be produced, including fallbacks — configuration is inconsistent.');
+}
+
+/** Generate a verified puzzle synchronously. */
+export function generatePuzzle(options: GenerateOptions): GenerationResult {
+  const steps = generationSteps(options);
+  for (;;) {
+    const r = steps.next();
+    if (r.done) return r.value;
+  }
+}
+
+/**
+ * Generate the same puzzle without blocking: work runs in slices of about
+ * `sliceMs` with a pause between them, so taps and animations stay responsive
+ * while the next puzzle is prepared. Results are identical to generatePuzzle.
+ */
+export async function generatePuzzleAsync(options: GenerateOptions, sliceMs = 8): Promise<GenerationResult> {
+  const steps = generationSteps(options);
+  for (;;) {
+    const sliceStart = Date.now();
+    let r = steps.next();
+    while (!r.done && Date.now() - sliceStart < sliceMs) r = steps.next();
+    if (r.done) return r.value;
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  }
 }

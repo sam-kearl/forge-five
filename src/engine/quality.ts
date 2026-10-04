@@ -65,7 +65,8 @@ export type RejectionReason =
   | 'near-duplicate'
   | 'target-weight'
   | 'target-out-of-range'
-  | 'construction-failed';
+  | 'construction-failed'
+  | 'wrong-difficulty';
 
 export interface QualityEvaluation {
   metrics: QualityMetrics;
@@ -94,12 +95,23 @@ export function evaluatePuzzle(
   const proof = solver.solve(t);
   if (!proof) return { unsolvable: true };
 
-  const raw = solver.enumerate(t, thresholds.enumerationLimit);
+  // Collect distinct solutions as they stream in. With a difficulty band, stop as soon as
+  // the decision is known: one past a finite maximum means "too many" (rejected), and
+  // reaching an open-ended minimum means "enough". Easiest-solution metrics then cover
+  // the solutions found so far.
+  const band = thresholds.distinctSolutionsRange;
+  const stopAt = band ? (Number.isFinite(band.max) ? band.max + 1 : band.min) : Infinity;
   const distinct = new Map<string, Expr>();
-  for (const e of raw) {
+  let stoppedEarly = false;
+  const raw = solver.enumerate(t, thresholds.enumerationLimit, (e) => {
     const k = canonicalKey(e);
     if (!distinct.has(k)) distinct.set(k, e);
-  }
+    if (distinct.size >= stopAt) {
+      stoppedEarly = true;
+      return true;
+    }
+    return false;
+  });
   const solutions = [...distinct.values()];
   if (solutions.length === 0) solutions.push(proof);
 
@@ -130,7 +142,7 @@ export function evaluatePuzzle(
   const w = witness ?? proof;
   const metrics: QualityMetrics = {
     distinctSolutions: solutions.length,
-    solutionCountCapped: raw.length >= thresholds.enumerationLimit,
+    solutionCountCapped: stoppedEarly || raw.length >= thresholds.enumerationLimit,
     easiestEffort,
     easiestMaxIntermediate: easiestMax,
     witnessMaxIntermediate: maxIntermediate(w, rules),
@@ -153,6 +165,7 @@ export function evaluatePuzzle(
   }
   if (thresholds.rejectSumOfAll && values.reduce((a, b) => a + b, 0) === target) rejections.push('sum-of-all');
   if (solutions.length < thresholds.minDistinctSolutions) rejections.push('too-few-solutions');
+  if (band && (solutions.length < band.min || solutions.length > band.max)) rejections.push('wrong-difficulty');
   if (easiestMax > thresholds.maxEasiestIntermediate) rejections.push('large-intermediates');
   if (easiestEffort > thresholds.maxEasiestEffort) rejections.push('too-hard');
   if (easiestEffort < thresholds.minEasiestEffort) rejections.push('too-easy');

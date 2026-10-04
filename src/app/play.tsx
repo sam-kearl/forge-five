@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { levelOfPuzzle } from '../engine';
+import { DIFFICULTY_NAMES, levelOfPuzzle, type Puzzle } from '../engine';
 import { GameBoard } from '../features/game/GameBoard';
 import { ProofPanel } from '../features/game/ProofPanel';
 import { useGameSession } from '../features/game/useGameSession';
@@ -10,6 +10,8 @@ import { useApp } from '../state/AppContext';
 import { Tap } from '../ui/controls';
 import { Icon } from '../ui/Icon';
 import { fonts, palette, radius, space } from '../ui/theme';
+
+const headerTitle = (p: Puzzle) => levelOfPuzzle(p).name + (p.difficulty ? ` · ${DIFFICULTY_NAMES[p.difficulty]}` : '');
 
 export default function Play() {
   const { reduceMotion, stats } = useApp();
@@ -44,10 +46,10 @@ export default function Play() {
         <Text
           style={styles.levelTitle}
           accessibilityRole="header"
-          accessibilityLabel={state ? levelOfPuzzle(state.puzzle).name : 'Loading puzzle'}
+          accessibilityLabel={state ? headerTitle(state.puzzle) : 'Loading puzzle'}
           maxFontSizeMultiplier={1.3}
         >
-          {state ? levelOfPuzzle(state.puzzle).name : ''}
+          {state ? headerTitle(state.puzzle) : ''}
         </Text>
         {state?.status === 'playing' ? (
           <Tap

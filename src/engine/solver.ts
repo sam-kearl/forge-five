@@ -41,8 +41,11 @@ export interface Solver {
   reach(mask: number): ReachMap;
   /** A witness tree using every piece exactly once, or null. */
   solve(target: Rational): Expr | null;
-  /** Distinct raw trees reaching `target` with every piece, up to `limit`. */
-  enumerate(target: Rational, limit: number): Expr[];
+  /**
+   * Distinct raw trees reaching `target` with every piece, up to `limit`.
+   * `onTree` sees each complete solution as it is found; returning true stops early.
+   */
+  enumerate(target: Rational, limit: number, onTree?: (tree: Expr) => boolean): Expr[];
 }
 
 const lowestBit = (m: number) => m & -m;
@@ -221,10 +224,10 @@ export function createSolver(items: readonly SolverItem[], rules: RuleSet): Solv
     return result;
   };
 
-  const enumerate = (target: Rational, limit: number): Expr[] => {
+  const enumerate = (target: Rational, limit: number, onTree?: (tree: Expr) => boolean): Expr[] => {
     const out: Expr[] = [];
-    // Returns up to `cap` trees for (mask, value).
-    const trees = (mask: number, value: Rational, cap: number): Expr[] => {
+    // Returns up to `cap` trees for (mask, value). `top` marks the full-set call, where onTree applies.
+    const trees = (mask: number, value: Rational, cap: number, top = false): Expr[] => {
       if ((mask & (mask - 1)) === 0) {
         const i = Math.log2(mask);
         return R.equals(items[i].value, value) ? [leaf(items[i].id, items[i].value)] : [];
@@ -237,15 +240,21 @@ export function createSolver(items: readonly SolverItem[], rules: RuleSet): Solv
         for (const l of ls) {
           const rs = trees(rm, rv, cap - res.length);
           for (const r of rs) {
-            res.push(node(op, l, r));
-            if (res.length >= cap) return true;
+            const tree = node(op, l, r);
+            res.push(tree);
+            if (res.length >= cap || (top && onTree?.(tree))) return true;
           }
         }
         return res.length >= cap;
       });
       return res;
     };
-    out.push(...trees(fullMask, target, limit));
+    if ((fullMask & (fullMask - 1)) === 0) {
+      const single = trees(fullMask, target, limit);
+      single.forEach((t) => onTree?.(t));
+      return single;
+    }
+    out.push(...trees(fullMask, target, limit, true));
     return out;
   };
 
