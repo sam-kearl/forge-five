@@ -56,7 +56,7 @@ Dynamic Type: UI text scales up to 1.3–1.6× (`maxFontSizeMultiplier`). Number
 | `Button` | ui/controls.tsx | primary (ember) / forge (flux) / secondary / ghost |
 | `Seal` | ui/Seal.tsx | Completion stamp |
 | `Logo`, `Icon` | ui/ | Original artwork drawn in code. The Forge button's icon shows two pieces flowing into one solid, hot piece with a glowing seam and rising sparks. |
-| `GameBoard` | features/game/GameBoard.tsx | Target and equation (with messages in its grey readout strip) at the top; forged pieces, the five pieces and the tools anchored at the bottom so they never move while building. |
+| `GameBoard` | features/game/GameBoard.tsx | Target and equation (with messages in its grey readout strip) at the top; the five pieces, any forged pieces and the tools anchored at the bottom (a new forged piece appears just above the tools and pushes the pieces up) so they never move while building. |
 | `ProofPanel` | features/game/ProofPanel.tsx | Seal, proof, all-five checklist, time/forges/undos, next action |
 | `AdSlot` | features/ads/AdSlot.tsx | Grey, dashed, labelled "Advertisement". Deliberately unlike any game element. |
 

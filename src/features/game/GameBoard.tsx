@@ -115,7 +115,32 @@ export function GameBoard({ state, dispatch, reduceMotion, highlight = [], compa
           use each once
         </Text>
       </View>
-      {/* Newly forged pieces sit above the original five. */}
+      <View style={[styles.trayRow, { gap: trayGap }]}>
+        {puzzle.sources.map((s) => {
+          const where = sourceStatus(s.id);
+          const available = where === 'tray';
+          const label = pieceA11yLabel(state, s.id);
+          return (
+            <View key={s.id} style={{ alignItems: 'center', width: pieceW }}>
+              <Tap
+                testID={`tray-${s.id}`}
+                onPress={() => dispatch({ type: 'insertPiece', pieceId: s.id })}
+                disabled={!available}
+                accessibilityLabel={available ? label : `${label}, ${where === 'bench' ? 'in the equation' : 'forged into another piece'}`}
+                accessibilityHint={available ? 'Places this number on the bench' : undefined}
+                style={[styles.pieceTap, hl(`piece:${s.id}`) && styles.spotlight]}
+              >
+                <PieceShape label={pieceValueText(s)} look={available ? 'source' : 'socket'} width={pieceW} />
+              </Tap>
+              <Text style={styles.slotNote} maxFontSizeMultiplier={1.2} importantForAccessibility="no">
+                {available ? ' ' : where === 'bench' ? 'placed' : 'forged'}
+              </Text>
+            </View>
+          );
+        })}
+      </View>
+
+      {/* Forged pieces appear below the original five, pushing them up so the newest piece sits just above the tools. */}
       {forgedInTray.length > 0 && (
         <View style={styles.forgedRow} accessibilityLabel="Forged pieces">
           {forgedInTray.map((id) => {
@@ -157,30 +182,6 @@ export function GameBoard({ state, dispatch, reduceMotion, highlight = [], compa
           })}
         </View>
       )}
-      <View style={[styles.trayRow, { gap: trayGap }]}>
-        {puzzle.sources.map((s) => {
-          const where = sourceStatus(s.id);
-          const available = where === 'tray';
-          const label = pieceA11yLabel(state, s.id);
-          return (
-            <View key={s.id} style={{ alignItems: 'center', width: pieceW }}>
-              <Tap
-                testID={`tray-${s.id}`}
-                onPress={() => dispatch({ type: 'insertPiece', pieceId: s.id })}
-                disabled={!available}
-                accessibilityLabel={available ? label : `${label}, ${where === 'bench' ? 'in the equation' : 'forged into another piece'}`}
-                accessibilityHint={available ? 'Places this number on the bench' : undefined}
-                style={[styles.pieceTap, hl(`piece:${s.id}`) && styles.spotlight]}
-              >
-                <PieceShape label={pieceValueText(s)} look={available ? 'source' : 'socket'} width={pieceW} />
-              </Tap>
-              <Text style={styles.slotNote} maxFontSizeMultiplier={1.2} importantForAccessibility="no">
-                {available ? ' ' : where === 'bench' ? 'placed' : 'forged'}
-              </Text>
-            </View>
-          );
-        })}
-      </View>
     </>
   );
 
