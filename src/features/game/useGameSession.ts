@@ -77,6 +77,25 @@ export function useGameSession() {
   const nextRef = useRef<Puzzle | null>(null);
   const countedSolve = useRef<string | null>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  // The puzzle clock runs only while the puzzle is on screen and the app is active.
+  // Finished stretches are banked into play.activeMs; `runningSince` marks the current one.
+  const sinceRef = useRef<number | null>(null);
+  const [runningSince, setRunningSince] = useState<number | null>(null);
+
+  const resumeClock = useCallback(() => {
+    if (sinceRef.current !== null || stateRef.current?.status !== 'playing' || RNAppState.currentState === 'background') return;
+    sinceRef.current = Date.now();
+    setRunningSince(sinceRef.current);
+  }, []);
+
+  /** Stops the clock and banks the running stretch into `s` (the current state by default). */
+  const bankClock = useCallback((s: GameState | null = stateRef.current) => {
+    const since = sinceRef.current;
+    sinceRef.current = null;
+    setRunningSince(null);
+    if (!s || since === null) return s;
+    return gameReducer(s, { type: 'addTime', ms: Date.now() - since });
+  }, []);
 
   const persist = useCallback(
     (s: GameState, immediate = false) => {
@@ -105,11 +124,13 @@ export function useGameSession() {
       saveJson(services.storage, STORAGE_KEYS.recent, recentRef.current);
       stateRef.current = s;
       setState(s);
+      sinceRef.current = null;
+      resumeClock();
       persist(s, true);
       updateStats(recordDeal);
       preloadNext();
     },
-    [services, persist, updateStats, preloadNext],
+    [services, persist, updateStats, preloadNext, resumeClock],
   );
 
   // Restore or deal on first mount.
@@ -128,6 +149,7 @@ export function useGameSession() {
       if (saved && isSavedGame(saved) && saved.status === 'playing' && matches(saved.puzzle, choiceRef.current)) {
         stateRef.current = saved;
         setState(saved);
+        resumeClock();
         preloadNext();
       } else {
         const p = await makePuzzleAsync(recentRef.current, choiceRef.current);
@@ -139,23 +161,35 @@ export function useGameSession() {
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Save immediately when the app goes to the background.
+  // Pause the clock and save immediately when the app goes to the background (or is closing),
+  // and when the player leaves this screen; resume when the app comes back.
   useEffect(() => {
+    const pause = () => {
+      const s = bankClock();
+      if (!s) return;
+      stateRef.current = s;
+      setState(s);
+      persist(s, true);
+    };
     const sub = RNAppState.addEventListener('change', (st) => {
-      if (st !== 'active' && stateRef.current) persist(stateRef.current, true);
+      if (st === 'active') resumeClock();
+      else pause();
     });
     return () => {
       sub.remove();
       clearTimeout(saveTimer.current);
+      pause();
     };
-  }, [persist]);
+  }, [persist, bankClock, resumeClock]);
 
   const dispatch = useCallback(
     (action: GameAction) => {
       const prev = stateRef.current;
       if (!prev) return;
-      const next = gameReducer(prev, action);
+      let next = gameReducer(prev, action);
       if (next === prev) return;
+      // Solving stops the clock, banking the final stretch.
+      if (next.status === 'solved' && prev.status !== 'solved') next = bankClock(next) ?? next;
       stateRef.current = next;
       setState(next);
       persist(next, next.status === 'solved');
@@ -172,7 +206,7 @@ export function useGameSession() {
         updateStats((s) => recordSolve(s, solution, next.play, Date.now()));
       }
     },
-    [persist, cue, updateStats],
+    [persist, cue, updateStats, bankClock],
   );
 
   const nextPuzzle = useCallback(() => {
@@ -184,5 +218,5 @@ export function useGameSession() {
     startPuzzle(p);
   }, [startPuzzle, updateStats]);
 
-  return { state, dispatch, nextPuzzle };
+  return { state, dispatch, nextPuzzle, runningSince };
 }

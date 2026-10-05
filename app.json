@@ -44,7 +44,7 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#161B24",
+          "backgroundColor": "#0A0705",
           "image": "./assets/splash-icon.png",
           "imageWidth": 160
         }
@@ -53,7 +53,7 @@
       "./plugins/withIOSSceneLifecycle"
     ],
     "scheme": "forgefive",
-    "backgroundColor": "#161B24",
+    "backgroundColor": "#0A0705",
     "experiments": {
       "typedRoutes": false
     }

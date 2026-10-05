@@ -8,7 +8,7 @@ Source of truth: `src/features/tutorial/script.ts`. It is tested end to end in `
 
 | # | Title | Coaching line | Waits for |
 |---|---|---|---|
-| 1 | This is your target | The blueprint shows the number to build: 18. You win by making an equation that equals it exactly. | Next |
+| 1 | This is your target | The iron plate shows the number to strike: 18. You win by making an equation that equals it exactly. | Next |
 | 2 | Five pieces | These are your numbers. Every one of them goes into the equation, and each is used exactly once. | Next |
 | 3 | Place a piece | Tap the 2. It moves from the tray onto the bench. | tap 2 |
 | 4 | Add a tool | Now tap +. | + |

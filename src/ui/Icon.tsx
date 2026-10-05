@@ -22,9 +22,12 @@ export type IconName =
   | 'check'
   | 'info'
   | 'play'
-  | 'forge';
+  | 'forge'
+  | 'hammer';
 
 const PATHS: Record<IconName, string[]> = {
+  // A hammer striking, with sparks flying off the blow.
+  hammer: ['M13 3.5 L19.5 10 L16.5 13 L10 6.5 Z', 'M12 9.5 L3.5 18', 'M3 21 H12', 'M18.5 15.5 L21 16.5', 'M17 18 L18.5 20.5'],
   undo: ['M9 7 L4 12 L9 17', 'M4 12 H14 a5 5 0 0 1 0 10 H11'],
   redo: ['M15 7 L20 12 L15 17', 'M20 12 H10 a5 5 0 0 0 0 10 H13'],
   backspace: ['M9 5 H20 V19 H9 L3 12 Z', 'M12 9 L17 15', 'M17 9 L12 15'],
@@ -67,6 +70,8 @@ const FILLED: Partial<Record<IconName, { solid: string; seam?: string }>> = {
   forge: { solid: 'M12.5 12 L15 7.5 H20 L22.5 12 L20 16.5 H15 Z', seam: 'M15.5 12 H19.5' },
 };
 
+const NO_TOUCH = { pointerEvents: 'none' } as const;
+
 const CIRCLED: Partial<Record<IconName, boolean>> = { help: true, info: true };
 
 export function Icon({
@@ -85,7 +90,7 @@ export function Icon({
 }) {
   const filled = FILLED[name];
   return (
-    <View accessible={false} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden pointerEvents="none">
+    <View accessible={false} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden style={NO_TOUCH}>
       <Svg width={size} height={size} viewBox="0 0 24 24">
         {CIRCLED[name] && <Circle cx={12} cy={12} r={10} stroke={color} strokeWidth={strokeWidth} fill="none" />}
         {PATHS[name].map((d, i) => (

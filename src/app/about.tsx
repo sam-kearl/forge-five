@@ -5,7 +5,7 @@ import { Screen } from '../ui/Screen';
 import { fonts, palette, space } from '../ui/theme';
 
 const CREDITS: { name: string; detail: string }[] = [
-  { name: 'Lexend typeface', detail: 'By Bonnie Shaver-Troup, Thomas Jockin and others. SIL Open Font License 1.1.' },
+  { name: 'Barlow and Barlow Condensed typefaces', detail: 'By Jeremy Tribby. SIL Open Font License 1.1.' },
   { name: 'Sound effects', detail: 'Original, synthesised for Forge Five.' },
   { name: 'Illustrations & icons', detail: 'Original, drawn in code for Forge Five.' },
   { name: 'Open-source software', detail: 'React Native, Expo and other libraries under their respective licences (MIT and similar).' },

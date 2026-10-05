@@ -13,10 +13,11 @@ import {
   type Op,
 } from '../../engine';
 import { ToolKey, Tap } from '../../ui/controls';
+import { GradientFill, GRADIENTS } from '../../ui/GradientFill';
 import { Icon } from '../../ui/Icon';
 import { ForgeBurst, PopIn, useShake } from '../../ui/motion';
 import { PieceShape } from '../../ui/PieceShape';
-import { TargetBlueprint } from '../../ui/TargetBlueprint';
+import { TargetPlate } from '../../ui/TargetPlate';
 import { fonts, palette, radius, space } from '../../ui/theme';
 import {
   feedbackMessage,
@@ -102,14 +103,14 @@ export function GameBoard({ state, dispatch, reduceMotion, highlight = [], compa
   };
   const forgedInTray = snap.tray.filter((id) => snap.pieces[id].kind === 'forged');
 
-  const targetArea = <TargetBlueprint target={puzzle.target} width={contentWidth} compact={compactTarget} />;
+  const targetArea = <TargetPlate target={puzzle.target} width={contentWidth} compact={compactTarget} />;
 
   const trayArea = (
     <>
       {/* Source tray: five fixed slots, so identical values keep distinct positions. */}
       <View style={styles.trayHeader}>
-        <Text style={styles.caption} maxFontSizeMultiplier={1.4}>
-          Pieces
+        <Text style={styles.caption} accessibilityRole="header" maxFontSizeMultiplier={1.4}>
+          PIECES
         </Text>
         <Text style={styles.captionMuted} maxFontSizeMultiplier={1.4} accessibilityLabel={trayA11ySummary(state)}>
           use each once
@@ -142,6 +143,11 @@ export function GameBoard({ state, dispatch, reduceMotion, highlight = [], compa
 
       {/* Forged pieces appear below the original five, pushing them up so the newest piece sits just above the tools. */}
       {forgedInTray.length > 0 && (
+        <Text style={styles.forgedCaption} accessibilityRole="header" maxFontSizeMultiplier={1.4}>
+          FORGED
+        </Text>
+      )}
+      {forgedInTray.length > 0 && (
         <View style={styles.forgedRow} accessibilityLabel="Forged pieces">
           {forgedInTray.map((id) => {
             const p = snap.pieces[id];
@@ -157,7 +163,7 @@ export function GameBoard({ state, dispatch, reduceMotion, highlight = [], compa
                   onAccessibilityAction={(e) => e.nativeEvent.actionName === 'breakApart' && dispatch({ type: 'breakApart', pieceId: id })}
                   style={[styles.pieceTap, hl('forged') && styles.spotlight]}
                 >
-                  <PieceShape label={pieceValueText(p)} look="forged" width={pieceW} />
+                  <PieceShape label={pieceValueText(p)} look="forged" width={pieceW} pulse={!reduceMotion} />
                 </Tap>
                 {/* Recipe and break control sit beside the piece to keep the tray short. */}
                 <View style={styles.forgedInfo}>
@@ -187,43 +193,49 @@ export function GameBoard({ state, dispatch, reduceMotion, highlight = [], compa
 
   const benchArea = (
     <Animated.View style={shakeStyle}>
-      <Pressable onPress={() => dispatch({ type: 'moveCursor', to: snap.bench.length })} accessible={false} style={styles.bench}>
-        <View
-          style={styles.benchTokens}
-          accessible
-          accessibilityLabel={`${spokenBench(snap)} ${analysis.kind === 'value' ? `Current value ${pieceValueTextFromAnalysis(analysis)}.` : ''}`}
-          accessibilityHint="Use the tools below to edit. Tap a token to select it."
-        >
-          {snap.bench.length === 0 && (
-            <Text style={styles.benchEmpty} maxFontSizeMultiplier={1.4}>
-              Your equation takes shape here
-            </Text>
-          )}
-          {snap.bench.map((t, i) => {
-            const selected = !!range && i >= range[0] && i <= range[1];
-            return (
-              <View key={t.id} style={styles.tokenWrap}>
-                {snap.cursor === i && <Cursor />}
-                <PopIn reduce={reduceMotion}>
-                  <Tap
-                    testID={`bench-${i}`}
-                    onPress={() => dispatch({ type: 'tapToken', index: i })}
-                    selected={selected}
-                    accessibilityLabel={`${spokenToken(snap, t)}, position ${i + 1} of ${snap.bench.length}${selected ? ', selected' : ''}`}
-                    accessibilityHint="Selects this token. Tap another token to extend the selection."
-                    style={[styles.token, selected && styles.tokenSelected]}
-                  >
-                    <TokenFace state={state} index={i} benchPieceW={benchPieceW} selected={selected} />
-                  </Tap>
-                </PopIn>
-              </View>
-            );
-          })}
-          {snap.cursor === snap.bench.length && snap.bench.length > 0 && <Cursor />}
-        </View>
-        <ForgeBurst trigger={burst} reduce={reduceMotion} />
-      </Pressable>
-      <Readout message={shownFeedback ?? readout} />
+      <Text style={styles.benchCaption} accessibilityRole="header" maxFontSizeMultiplier={1.4}>
+        FORGE YOUR EQUATION HERE
+      </Text>
+      <View style={styles.benchFrame}>
+        <Pressable onPress={() => dispatch({ type: 'moveCursor', to: snap.bench.length })} accessible={false} style={styles.bench}>
+          <GradientFill stops={GRADIENTS.bench} />
+          <View
+            style={styles.benchTokens}
+            accessible
+            accessibilityLabel={`${spokenBench(snap)} ${analysis.kind === 'value' ? `Current value ${pieceValueTextFromAnalysis(analysis)}.` : ''}`}
+            accessibilityHint="Use the tools below to edit. Tap a token to select it."
+          >
+            {snap.bench.length === 0 && (
+              <Text style={styles.benchEmpty} maxFontSizeMultiplier={1.4}>
+                Your equation takes shape here
+              </Text>
+            )}
+            {snap.bench.map((t, i) => {
+              const selected = !!range && i >= range[0] && i <= range[1];
+              return (
+                <View key={t.id} style={styles.tokenWrap}>
+                  {snap.cursor === i && <Cursor />}
+                  <PopIn reduce={reduceMotion}>
+                    <Tap
+                      testID={`bench-${i}`}
+                      onPress={() => dispatch({ type: 'tapToken', index: i })}
+                      selected={selected}
+                      accessibilityLabel={`${spokenToken(snap, t)}, position ${i + 1} of ${snap.bench.length}${selected ? ', selected' : ''}`}
+                      accessibilityHint="Selects this token. Tap another token to extend the selection."
+                      style={[styles.token, selected && styles.tokenSelected]}
+                    >
+                      <TokenFace state={state} index={i} benchPieceW={benchPieceW} selected={selected} />
+                    </Tap>
+                  </PopIn>
+                </View>
+              );
+            })}
+            {snap.cursor === snap.bench.length && snap.bench.length > 0 && <Cursor />}
+          </View>
+          <ForgeBurst trigger={burst} reduce={reduceMotion} />
+        </Pressable>
+        <Readout message={shownFeedback ?? readout} />
+      </View>
     </Animated.View>
   );
 
@@ -296,18 +308,14 @@ export function GameBoard({ state, dispatch, reduceMotion, highlight = [], compa
             ? 'Tests whether your equation uses all five pieces and makes the target'
             : 'Fuses a calculation into a single new piece you can use later'
         }
-        style={[
-          styles.action,
-          { minHeight: keyH + 4 },
-          primary === 'check' ? styles.checkAction : styles.forgeAction,
-          (hl('forge') || hl('check')) && styles.spotlight,
-        ]}
+        style={[styles.action, { minHeight: keyH + 8 }, (hl('forge') || hl('check')) && styles.spotlight]}
       >
+        <GradientFill stops={GRADIENTS.molten} />
         <View style={styles.actionInner}>
-          <Icon name={primary === 'check' ? 'seal' : 'forge'} color={palette.brassInk} size={24} strokeWidth={2.2} />
+          <Icon name={primary === 'check' ? 'seal' : 'hammer'} color={palette.brassInk} size={28} strokeWidth={2.2} />
           <View>
             <Text style={styles.actionText} maxFontSizeMultiplier={1.4}>
-              {primary === 'check' ? 'Check' : 'Forge'}
+              {primary === 'check' ? 'CHECK' : 'FORGE'}
             </Text>
             {range && (
               <Text style={styles.actionSub} maxFontSizeMultiplier={1.2}>
@@ -389,10 +397,10 @@ function TokenFace({ state, index, benchPieceW, selected }: { state: GameState; 
 }
 
 const TONE_COLOR: Record<Message['tone'], string> = {
-  neutral: palette.graphite,
-  good: '#1F7A3A',
-  issue: palette.quenchInk,
-  info: '#5A4A1A',
+  neutral: palette.mist,
+  good: palette.success,
+  issue: palette.quench,
+  info: palette.amberText,
 };
 
 function Readout({ message }: { message: Message }) {
@@ -492,39 +500,50 @@ const styles = StyleSheet.create({
   tools: { alignSelf: 'center', gap: space.xs + 2, paddingTop: space.xs, paddingBottom: space.sm },
   flex: { flex: 1 },
   trayHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginTop: space.xs },
-  caption: { fontFamily: fonts.semibold, fontSize: 12, letterSpacing: 1.6, color: palette.mist, textTransform: 'uppercase' },
-  captionMuted: { fontFamily: fonts.regular, fontSize: 12, color: palette.mist },
+  caption: { fontFamily: fonts.display, fontSize: 13, letterSpacing: 3, color: palette.mist },
+  captionMuted: { fontFamily: fonts.regular, fontSize: 12, color: palette.dim },
+  benchCaption: { fontFamily: fonts.display, fontSize: 13, letterSpacing: 3, color: palette.mist, marginBottom: space.xs },
+  forgedCaption: { fontFamily: fonts.display, fontSize: 13, letterSpacing: 3, color: '#FFB878', marginBottom: -2 },
   trayRow: { flexDirection: 'row', justifyContent: 'center' },
   pieceTap: { alignItems: 'center', justifyContent: 'center', borderRadius: radius.md },
-  slotNote: { fontFamily: fonts.medium, fontSize: 11, color: palette.mist, height: 15, marginTop: 1 },
+  slotNote: { fontFamily: fonts.medium, fontSize: 11, color: palette.dim, height: 15, marginTop: 1 },
   spotlight: { borderRadius: radius.md, borderWidth: 3, borderColor: palette.ember },
   forgedRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space.md, justifyContent: 'center' },
   forgedItem: { flexDirection: 'row', alignItems: 'center', gap: space.sm, maxWidth: 260 },
   forgedInfo: { alignItems: 'flex-start', flexShrink: 1 },
-  recipe: { fontFamily: fonts.semibold, fontSize: 14, color: palette.brass },
+  recipe: { fontFamily: fonts.display, fontSize: 18, color: palette.amberText },
   breakBtn: { minHeight: 36, minWidth: 0, borderRadius: radius.pill, paddingHorizontal: space.xs },
   breakInner: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 36 },
   breakText: { fontFamily: fonts.medium, fontSize: 12, color: palette.mist },
+  benchFrame: {
+    borderRadius: radius.lg + 2,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,140,60,0.28)',
+    boxShadow: '0 0 24px rgba(255,100,30,0.12)',
+  },
   bench: {
     minHeight: 92,
-    backgroundColor: palette.ceramic,
-    borderTopLeftRadius: radius.lg,
-    borderTopRightRadius: radius.lg,
-    borderWidth: 2,
-    borderBottomWidth: 0,
-    borderColor: palette.ceramicEdge,
+    backgroundColor: palette.plateBottom,
     paddingHorizontal: space.sm,
     paddingVertical: space.md,
     justifyContent: 'center',
   },
   benchTokens: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', rowGap: space.sm },
-  benchEmpty: { fontFamily: fonts.regular, fontSize: 15, color: '#8A8170' },
+  benchEmpty: { fontFamily: fonts.regular, fontSize: 15, color: palette.dim },
   tokenWrap: { flexDirection: 'row', alignItems: 'center' },
   token: { minWidth: 30, alignItems: 'center', justifyContent: 'center', borderRadius: radius.sm, paddingHorizontal: 2 },
-  tokenSelected: { backgroundColor: 'rgba(255,176,59,0.25)', borderBottomWidth: 3, borderBottomColor: palette.ember },
-  opText: { fontFamily: fonts.bold, fontSize: 30, color: palette.graphite, paddingHorizontal: 2, includeFontPadding: false },
-  parenText: { fontFamily: fonts.regular, fontSize: 42, color: palette.blueprint, includeFontPadding: false, marginTop: -4 },
-  cursor: { width: 3, height: 40, borderRadius: 2, backgroundColor: palette.ember, marginHorizontal: 1 },
+  tokenSelected: { backgroundColor: 'rgba(255,179,71,0.18)', borderBottomWidth: 3, borderBottomColor: palette.ember },
+  opText: { fontFamily: fonts.black, fontSize: 32, color: '#E9D6C3', paddingHorizontal: 3, includeFontPadding: false },
+  parenText: { fontFamily: fonts.regular, fontSize: 42, color: palette.mist, includeFontPadding: false, marginTop: -4 },
+  cursor: {
+    width: 3,
+    height: 40,
+    borderRadius: 2,
+    backgroundColor: palette.ember,
+    marginHorizontal: 2,
+    boxShadow: '0 0 10px #FF8A2A',
+  },
   readout: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -532,21 +551,26 @@ const styles = StyleSheet.create({
     minHeight: 52,
     paddingHorizontal: space.md,
     paddingVertical: space.xs,
-    backgroundColor: palette.ceramicShade,
-    borderBottomLeftRadius: radius.lg,
-    borderBottomRightRadius: radius.lg,
-    borderWidth: 2,
+    backgroundColor: '#0E0A08',
     borderTopWidth: 1,
-    borderColor: palette.ceramicEdge,
+    borderTopColor: 'rgba(255,140,60,0.18)',
   },
   readoutText: { fontFamily: fonts.medium, fontSize: 14, flexShrink: 1 },
-  readoutValue: { fontFamily: fonts.bold, fontSize: 18, fontVariant: ['tabular-nums'] },
+  readoutValue: { fontFamily: fonts.black, fontSize: 24, color: palette.ember, fontVariant: ['tabular-nums'] },
   toolRow: { flexDirection: 'row', gap: space.xs + 2 },
   slot: { flex: 1, minWidth: 0 },
-  action: { minHeight: 56, borderRadius: radius.lg, justifyContent: 'center', marginTop: space.xs },
-  forgeAction: { backgroundColor: palette.brass, borderWidth: 1.5, borderColor: palette.brassDeep },
-  checkAction: { backgroundColor: palette.brass, borderWidth: 1.5, borderColor: palette.brassDeep },
-  actionInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.sm },
-  actionText: { fontFamily: fonts.bold, fontSize: 18, color: palette.brassInk },
+  action: {
+    minHeight: 60,
+    borderRadius: radius.lg + 2,
+    justifyContent: 'center',
+    marginTop: space.xs,
+    overflow: 'hidden',
+    backgroundColor: palette.brass,
+    borderWidth: 1,
+    borderColor: '#FFE2A6',
+    boxShadow: '0 0 34px rgba(255,140,40,0.45)',
+  },
+  actionInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.sm + 2 },
+  actionText: { fontFamily: fonts.black, fontSize: 24, letterSpacing: 3, color: palette.brassInk },
   actionSub: { fontFamily: fonts.medium, fontSize: 11, color: palette.brassInk, marginTop: -2 },
 });

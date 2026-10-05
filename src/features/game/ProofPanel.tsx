@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { formatExpr, type GameState } from '../../engine';
+import { formatExpr, playTimeMs, type GameState } from '../../engine';
 import { AdSlot } from '../ads/AdSlot';
 import { Button } from '../../ui/controls';
 import { Icon } from '../../ui/Icon';
@@ -40,7 +40,7 @@ export function ProofPanel({
   if (!solution) return null;
   const proof = formatExpr(solution);
   const spokenProof = `${spokenExpr(solution)} equals ${puzzle.target}`;
-  const took = play.solvedAt ? duration(play.solvedAt - play.startedAt) : null;
+  const took = play.solvedAt ? duration(playTimeMs(play)) : null;
 
   return (
     <ScrollView contentContainerStyle={styles.wrap} accessibilityViewIsModal>
@@ -114,20 +114,21 @@ function Stat({ label, value }: { label: string; value: string }) {
 
 const styles = StyleSheet.create({
   wrap: { alignItems: 'center', padding: space.lg, gap: space.md, maxWidth: 560, width: '100%', alignSelf: 'center' },
-  title: { fontFamily: fonts.black, fontSize: 30, color: palette.chalk },
+  title: { fontFamily: fonts.black, fontSize: 36, letterSpacing: 1, color: palette.chalk },
   puzzleId: { fontFamily: fonts.medium, fontSize: 13, color: palette.mist, letterSpacing: 0.5, marginTop: -space.sm },
   proofCard: {
     alignSelf: 'stretch',
-    backgroundColor: palette.ceramic,
+    backgroundColor: palette.steel,
     borderRadius: radius.lg,
-    borderWidth: 2,
-    borderColor: palette.brass,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,170,60,0.55)',
+    boxShadow: '0 0 24px rgba(255,120,30,0.18)',
     padding: space.lg,
     alignItems: 'center',
   },
-  proofResult: { fontFamily: fonts.black, fontSize: 30, color: palette.brassDeep, marginTop: 2, fontVariant: ['tabular-nums'] },
-  proofLabel: { fontFamily: fonts.semibold, fontSize: 11, letterSpacing: 2, color: palette.brassDeep, marginBottom: space.xs },
-  proof: { fontFamily: fonts.bold, fontSize: 26, color: palette.graphite, textAlign: 'center', fontVariant: ['tabular-nums'] },
+  proofResult: { fontFamily: fonts.black, fontSize: 34, color: palette.ember, marginTop: 2, fontVariant: ['tabular-nums'] },
+  proofLabel: { fontFamily: fonts.display, fontSize: 13, letterSpacing: 4, color: palette.blueprintLine, marginBottom: space.xs },
+  proof: { fontFamily: fonts.display, fontSize: 30, color: palette.chalk, textAlign: 'center', fontVariant: ['tabular-nums'] },
   checklist: { flexDirection: 'row', gap: space.sm, marginTop: space.xs },
   checkItem: { alignItems: 'center' },
   tick: {
@@ -144,7 +145,7 @@ const styles = StyleSheet.create({
   note: { fontFamily: fonts.regular, fontSize: 14, color: palette.mist },
   statsRow: { flexDirection: 'row', gap: space.xl, marginVertical: space.xs },
   stat: { alignItems: 'center' },
-  statValue: { fontFamily: fonts.bold, fontSize: 20, color: palette.chalk, fontVariant: ['tabular-nums'] },
+  statValue: { fontFamily: fonts.black, fontSize: 24, color: palette.chalk, fontVariant: ['tabular-nums'] },
   statLabel: { fontFamily: fonts.regular, fontSize: 12, color: palette.mist },
   buttons: { alignSelf: 'stretch', gap: space.sm, marginTop: space.sm },
 });

@@ -2,7 +2,9 @@ import { router } from 'expo-router';
 import type { ReactNode } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useApp } from '../state/AppContext';
 import { Tap } from './controls';
+import { ForgeBackdrop } from './ForgeBackdrop';
 import { Icon } from './Icon';
 import { fonts, palette, space } from './theme';
 
@@ -21,10 +23,12 @@ export function Screen({
   onBack?: () => void;
   maxWidth?: number;
 }) {
+  const { reduceMotion } = useApp();
   const back = onBack ?? (() => (router.canGoBack() ? router.back() : router.replace('/')));
   const body = <View style={[styles.body, { maxWidth }]}>{children}</View>;
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom', 'left', 'right']}>
+      <ForgeBackdrop reduce={reduceMotion} />
       {title !== undefined && (
         <View style={styles.header}>
           <Tap onPress={back} accessibilityLabel="Back" style={styles.headerBtn}>
@@ -56,7 +60,7 @@ const styles = StyleSheet.create({
   headerBtn: { borderRadius: 24 },
   headerRight: { minWidth: 48, alignItems: 'flex-end' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  title: { flex: 1, textAlign: 'center', fontFamily: fonts.bold, fontSize: 18, color: palette.chalk },
+  title: { flex: 1, textAlign: 'center', fontFamily: fonts.display, fontSize: 20, letterSpacing: 2, color: palette.chalk },
   scroll: { flexGrow: 1, paddingBottom: space.xxl },
   body: { width: '100%', alignSelf: 'center', paddingHorizontal: space.lg, flexGrow: 1 },
 });

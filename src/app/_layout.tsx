@@ -1,11 +1,5 @@
-import {
-  Lexend_400Regular,
-  Lexend_500Medium,
-  Lexend_600SemiBold,
-  Lexend_700Bold,
-  Lexend_800ExtraBold,
-  useFonts,
-} from '@expo-google-fonts/lexend';
+import { Barlow_400Regular, Barlow_500Medium, Barlow_600SemiBold, Barlow_700Bold, useFonts } from '@expo-google-fonts/barlow';
+import { BarlowCondensed_700Bold, BarlowCondensed_800ExtraBold } from '@expo-google-fonts/barlow-condensed';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -28,11 +22,12 @@ if (Platform.OS === 'web' && typeof document !== 'undefined') {
 function Gate() {
   const { ready, reduceMotion } = useApp();
   const [fontsLoaded, fontError] = useFonts({
-    Lexend_400Regular,
-    Lexend_500Medium,
-    Lexend_600SemiBold,
-    Lexend_700Bold,
-    Lexend_800ExtraBold,
+    Barlow_400Regular,
+    Barlow_500Medium,
+    Barlow_600SemiBold,
+    Barlow_700Bold,
+    BarlowCondensed_700Bold,
+    BarlowCondensed_800ExtraBold,
   });
   const done = ready && (fontsLoaded || !!fontError);
   useEffect(() => {

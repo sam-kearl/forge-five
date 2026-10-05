@@ -82,7 +82,7 @@ src/
   features/       game board, tutorial, parental gate, ad slot
   services/       storage, ads, purchases, sound, haptics (interfaces + implementations)
   state/          app context and pure settings/stats models
-  ui/             design tokens and reusable components (pieces, blueprint, seal, icons)
+  ui/             design tokens and reusable components (pieces, target plate, forge backdrop, seal, icons)
 scripts/          puzzle report, sound synthesis
 docs/             plan, design system, licenses, privacy, review items, release checklist, web readiness
 assets/sounds/    original synthesised WAV files

@@ -9,6 +9,7 @@ import { ProofPanel } from '../features/game/ProofPanel';
 import { createTutorialGame, OFF_SCRIPT_HINT, TUTORIAL_OUTRO, TUTORIAL_STEPS } from '../features/tutorial/script';
 import { useApp } from '../state/AppContext';
 import { Button, Tap } from '../ui/controls';
+import { ForgeBackdrop } from '../ui/ForgeBackdrop';
 import { Icon } from '../ui/Icon';
 import { fonts, palette, radius, space } from '../ui/theme';
 
@@ -64,6 +65,7 @@ export default function Tutorial() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom', 'left', 'right']}>
+      <ForgeBackdrop reduce={reduceMotion} />
       <View style={styles.header}>
         <Tap
           onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
@@ -126,7 +128,15 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: space.sm, minHeight: 52 },
   headerBtn: { borderRadius: 24 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { flex: 1, textAlign: 'center', fontFamily: fonts.bold, fontSize: 17, color: palette.chalk },
+  headerTitle: {
+    flex: 1,
+    textAlign: 'center',
+    fontFamily: fonts.display,
+    fontSize: 18,
+    letterSpacing: 3,
+    color: palette.chalk,
+    textTransform: 'uppercase',
+  },
   skip: { paddingHorizontal: space.md, justifyContent: 'center' },
   skipText: { fontFamily: fonts.semibold, color: palette.mist, fontSize: 15 },
   coach: {
@@ -140,6 +150,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.md,
     borderRadius: radius.lg,
     backgroundColor: palette.steel,
+    borderWidth: 1,
+    borderColor: 'rgba(255,140,60,0.2)',
     borderLeftWidth: 4,
     borderLeftColor: palette.ember,
     maxWidth: 600,

@@ -1,5 +1,6 @@
 import { createGame, gameReducer, generatePuzzle, parseTokens, pieceExpr, type GameAction, type GameState } from '../engine';
 import { cuesFor } from '../features/game/cues';
+import { formatTimer, spokenTimer } from '../features/game/timer';
 import { initialGate, LOCKOUT_MS, MAX_ATTEMPTS, pressDigit } from '../features/parents/gate';
 import { createTutorialGame, TUTORIAL_STEPS } from '../features/tutorial/script';
 import { MockAdService, mayShowAd, NoAdService, RESULTS_AD_EVERY } from '../services/ads';
@@ -189,6 +190,11 @@ describe('statistics', () => {
     expect(favouriteTool(st)).not.toBeNull();
   });
 
+  it('times a solve by active play, not time spent in the background', () => {
+    const play = { ...solved.play, solvedAt: 600_000, activeMs: 45_000 };
+    expect(recordSolve(EMPTY_STATS, solved.solution!, play, 600_000, '2026-09-29').fastestMs).toBe(45_000);
+  });
+
   it('builds and breaks day streaks', () => {
     let st = recordSolve(EMPTY_STATS, solved.solution!, solved.play, 0, '2026-09-27');
     st = recordSolve(st, solved.solution!, solved.play, 0, '2026-09-28');
@@ -373,5 +379,25 @@ describe('engine purity', () => {
       const imports = [...src.matchAll(/from\s+'([^']+)'/g)].map((m) => m[1]);
       for (const i of imports) expect([f, i]).toEqual([f, expect.stringMatching(/^\.\//)]);
     }
+  });
+});
+
+describe('puzzle timer text', () => {
+  it('shows whole seconds until a minute, then m:ss', () => {
+    expect(formatTimer(0)).toBe('0');
+    expect(formatTimer(999)).toBe('0');
+    expect(formatTimer(47_400)).toBe('47');
+    expect(formatTimer(59_999)).toBe('59');
+    expect(formatTimer(60_000)).toBe('1:00');
+    expect(formatTimer(65_000)).toBe('1:05');
+    expect(formatTimer(754_000)).toBe('12:34');
+    expect(formatTimer(-5)).toBe('0');
+  });
+
+  it('is spoken in words', () => {
+    expect(spokenTimer(1_000)).toBe('1 second');
+    expect(spokenTimer(47_000)).toBe('47 seconds');
+    expect(spokenTimer(61_000)).toBe('1 minute 1 second');
+    expect(spokenTimer(125_000)).toBe('2 minutes 5 seconds');
   });
 });

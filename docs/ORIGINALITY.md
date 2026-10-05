@@ -19,13 +19,14 @@ This file records what was designed specifically for Forge Five, to support orig
 
 ## Visual identity
 
-- **Theme.** A creative night-time workshop and drafting studio, not a medieval smithy. There are no weapons, anvils, ingots, moulds or playing cards.
-- **Pieces.** Hex-nut components with a ceramic face, an inner ring and a coolant rim. Forged pieces are brass with three rivets.
-- **Target.** A blueprint spec sheet with grid paper, a dashed margin and a dimension line.
-- **Completion.** A toothed brass seal stamped "FORGED ✦ 5 ✦".
-- **Logo.** Five hex components joined by dashed construction lines to a glowing assembly point.
-- **Palette.** Ink, steel, blueprint and the coolant → ember → flux → brass heat scale, plus a violet "quench" colour for gentle issues.
-- **Icons.** A custom 24-pixel line set drawn in code.
+- **Theme.** "Molten Foundry": a smithy at night, with cast iron, the forge fire glowing from below, rising embers and molten amber metal. This is generic imagery, drawn entirely in code. There are no weapons, characters, ingots, moulds or playing cards, and no art or layout is taken from another game (see REVIEW_ITEMS C5).
+- **Pieces.** Iron hexagons with a hot orange rim. Forged pieces are molten amber with a heat glow that slowly throbs. Used pieces leave a dark, empty socket.
+- **Target.** A riveted iron plate engraved "STRIKE THIS NUMBER", with the number glowing like hot metal.
+- **Completion.** A toothed seal stamped "FORGED ✦ 5 ✦".
+- **Logo.** Five hexagons (one molten, four iron) joined by dashed construction lines to a glowing assembly point.
+- **Palette.** Cast iron (#0A0705 to #2B221C), the fire (#FF6014), the hot rim → ember → flux → molten amber heat scale, a red clear key, and a cool blue "quench" colour for gentle issues.
+- **Type.** Barlow and Barlow Condensed (OFL), used unmodified.
+- **Icons.** A custom 24-pixel line set drawn in code, including the hammer on the Forge button.
 
 ## Sound
 

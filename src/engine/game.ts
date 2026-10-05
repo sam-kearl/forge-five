@@ -56,6 +56,12 @@ export type Feedback =
 export interface PlayStats {
   readonly startedAt: number;
   readonly solvedAt?: number;
+  /**
+   * Time actually spent on the puzzle (ms), banked whenever the clock pauses:
+   * the app going to the background or closing, leaving the screen, or solving.
+   * Absent in games saved before the timer existed.
+   */
+  readonly activeMs?: number;
   readonly moves: number;
   readonly forges: number;
   readonly undos: number;
@@ -93,7 +99,9 @@ export type GameAction =
   | { type: 'undo' }
   | { type: 'redo' }
   | { type: 'check'; now: number }
-  | { type: 'dismissFeedback' };
+  | { type: 'dismissFeedback' }
+  /** Banks `ms` of active play time. Not an edit: no history, feedback or move count. */
+  | { type: 'addTime'; ms: number };
 
 const HISTORY_LIMIT = 300;
 
@@ -118,6 +126,13 @@ export function createGame(puzzle: Puzzle, now: number): GameState {
 // ---------------------------------------------------------------------------
 // Queries
 // ---------------------------------------------------------------------------
+
+/** Active time spent on a puzzle (ms). Older saves without `activeMs` fall back to wall-clock time. */
+export function playTimeMs(play: PlayStats, now?: number): number {
+  if (play.activeMs !== undefined) return play.activeMs;
+  const end = play.solvedAt ?? now;
+  return end === undefined ? 0 : Math.max(0, end - play.startedAt);
+}
 
 export const selectionRange = (sel: Selection | null): [number, number] | null =>
   sel ? [Math.min(sel.anchor, sel.focus), Math.max(sel.anchor, sel.focus)] : null;
@@ -263,6 +278,11 @@ function removeRange(snap: Snapshot, start: number, end: number): Snapshot {
 
 export function gameReducer(state: GameState, action: GameAction, rules: RuleSet = INITIAL_CONFIG.rules): GameState {
   if (action.type === 'dismissFeedback') return { ...state, feedback: null };
+  if (action.type === 'addTime') {
+    // Solving banks the final stretch, so this is accepted in any status.
+    if (!(action.ms > 0)) return state;
+    return { ...state, play: { ...state.play, activeMs: (state.play.activeMs ?? 0) + action.ms } };
+  }
   if (state.status === 'solved') return state;
   const { snap } = state;
 

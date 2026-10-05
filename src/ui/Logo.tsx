@@ -44,14 +44,15 @@ export function Logo({ size = 140 }: { size?: number }) {
             strokeDasharray="3,4"
           />
         ))}
-        <Circle cx={c} cy={c} r={size * 0.12} fill={palette.flux} opacity={0.25} />
+        <Circle cx={c} cy={c} r={size * 0.16} fill={palette.fire} opacity={0.18} />
+        <Circle cx={c} cy={c} r={size * 0.12} fill={palette.flux} opacity={0.3} />
         <Circle cx={c} cy={c} r={size * 0.075} fill={palette.ember} />
         {centers.map(([x, y], i) => (
           <Polygon
             key={i}
             points={hex(x, y)}
-            fill={i === 0 ? palette.brass : palette.ceramic}
-            stroke={i === 0 ? palette.brassDeep : palette.coolant}
+            fill={i === 0 ? palette.brass : palette.steelHi}
+            stroke={i === 0 ? palette.brassHi : palette.coolant}
             strokeWidth={3}
             strokeLinejoin="round"
           />
@@ -66,6 +67,6 @@ export function Logo({ size = 140 }: { size?: number }) {
 
 const styles = StyleSheet.create({
   wrap: { alignItems: 'center' },
-  word: { fontFamily: fonts.black, fontSize: 34, letterSpacing: 3, color: palette.chalk, marginTop: 4 },
+  word: { fontFamily: fonts.black, fontSize: 40, letterSpacing: 4, color: palette.chalk, marginTop: 4 },
   five: { color: palette.ember },
 });

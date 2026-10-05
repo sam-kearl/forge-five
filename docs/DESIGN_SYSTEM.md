@@ -4,44 +4,49 @@ Tokens live in `src/ui/theme.ts`. Components live in `src/ui/`.
 
 ## Mood
 
-A bright, clever workshop at night: blueprint paper, ceramic and brass components, controlled sparks. It should be warm and tactile, slightly magical, and welcoming to younger players without looking childish. The metaphor never gets in the way of the maths: standard symbols `+ − × ÷ ( )` are always large and plain.
+**Molten Foundry**: a smithy at night. Cast-iron surfaces, the forge fire glowing up from below the tools, a few embers drifting upward, and molten amber where pieces have been forged together. It should feel warm, weighty and a little dramatic without looking childish. The metaphor never gets in the way of the maths: standard symbols `+ − × ÷` are always large and plain.
+
+Screen wording follows the theme: the target plate says "STRIKE THIS NUMBER", the bench is headed "FORGE YOUR EQUATION HERE", the tray is "PIECES" and the row of new pieces is "FORGED".
 
 ## Colour: the heat scale
 
 | Token | Hex | Role |
 |---|---|---|
-| `ink` | #161B24 | App background |
-| `steel` / `steelHi` / `steelLine` | #262F3D / #35404F / #4A5668 | Panels, tool keys, borders |
-| `blueprint` / `blueprintLine` | #15406A / #6FB2E8 | Target card |
-| **`coolant`** | #2EC4B6 | *Cool*: available pieces, toggles |
-| **`ember`** | #FFB03B | *Warm*: selection, cursor, focus, primary buttons |
-| **`flux`** | #FF6A3D | *Hot*: the forge burst |
-| **`brass`** | #E9C46A | *Done*: forged pieces, the Forge/Check button, the seal |
-| `ceramic` / `ceramicEdge` / `ceramicShade` | #F5F0E6 / #D9CFBD / #E9E1D2 | Bench surface, piece faces |
-| `graphite` | #1E2430 | Text on light surfaces |
-| `mist` | #AEB8C7 | Secondary text on dark |
-| `quench` / `quenchInk` | #9B8CFF / #4B3FB0 | Gentle "cooling" issue colour (always with an icon and words) |
+| `ink` | #0A0705 | App background (the darkened smithy) |
+| `steel` / `steelHi` / `steelLine` | #1C1612 / #2B221C / #3A2E26 | Iron panels, keys, borders |
+| `ironTop` → `ironBottom`, `plateTop` → `plateBottom` | #2B221C → #191310, #221A15 → #130E0B | Key and plate gradients (`GradientFill`) |
+| `fire` | #FF6014 | The forge glow behind the tools (`ForgeBackdrop`) |
+| **`coolant`** (hot rim) | #FF8A2A → #7A2A0A | Available pieces: iron face, hot orange rim |
+| **`ember`** | #FFB347 | Selection, cursor, focus, embers |
+| **`flux`** | #FF6A2A | The forge burst |
+| **`brass`** (molten amber) | #F7A93C, with #FFD889 / #C9661A | Forged pieces, the Forge/Check button, the seal |
+| `blueprintLine` | #C99A72 | Engraved labels on iron ("STRIKE THIS NUMBER") |
+| `timer` | #E9B884 | The puzzle clock |
+| `chalk` / `mist` / `dim` | #F5E9DC / #A08F80 / #7E6E61 | Text, secondary text and quiet notes on iron |
+| `danger` → `dangerDeep` | #B3261A → #7A160E | The clear key |
+| `quench` / `quenchInk` | #8EC5FF / #2B4C8C | Cool "quenched" issue colour (always with an icon and words) |
 
 State is **never shown by colour alone**:
 
-- a selected token gets a thicker rim, corner ticks and an underline;
-- a used piece becomes a dashed socket labelled "placed" or "forged";
+- a selected token gets an ember outline, corner ticks and an underline;
+- a used piece becomes a dark empty socket labelled "placed" or "forged";
 - issues get an ⓘ icon plus a sentence;
 - the matching readout includes "✓ matches the target".
 
-Contrast targets (to verify with an audit): body text on ink ≥ 7:1 (chalk); `mist` on ink ≈ 8:1; graphite on ceramic ≥ 12:1; brass-ink on brass ≥ 7:1.
+Contrast targets (to verify with an audit): chalk on ink ≥ 15:1; `mist` on ink ≈ 6.5:1; brass-ink on molten amber ≥ 7:1; chalk on the piece face ≥ 10:1. Used-piece sockets are deliberately dim; their state is also given in words.
 
 ## Typography
 
-**Lexend** (SIL OFL 1.1), weights 400–800. It is geometric, built for reading ease, and has clear 1/7 and 6/9 shapes. Numbers always use tabular figures.
+**Barlow** for interface text and **Barlow Condensed** for numbers, headings and stamped labels (both SIL OFL 1.1). Barlow's slightly rounded industrial shapes suit the foundry theme, and the condensed cut keeps large numbers compact. Numbers always use tabular figures.
 
 | Style | Font | Size |
 |---|---|---|
-| Display / target | Lexend ExtraBold | 40–54 |
-| Title | Lexend Bold | 24 |
-| Body | Lexend Regular | 16 / 23 |
-| Label (caps) | Lexend SemiBold | 11–12, tracking 1.4–2 |
-| Piece numbers | Lexend Bold | scales with piece: 44% (1 digit), 38% (2), 30% (3+) |
+| Target number | Barlow Condensed ExtraBold | 48–64 |
+| Header, labels (caps) | Barlow Condensed Bold | 13–18, tracking 3–4 |
+| Timer | Barlow Condensed Bold | 24 |
+| Forge/Check button | Barlow Condensed ExtraBold | 24, tracking 3 |
+| Body | Barlow Regular / Medium | 14–16 |
+| Piece numbers | Barlow Condensed ExtraBold | scales with piece: 48% (1 digit), 44% (2), 38% (3+) |
 
 Dynamic Type: UI text scales up to 1.3–1.6× (`maxFontSizeMultiplier`). Numbers inside pieces are fixed so they always fit the component. Fractions (future) will render as `7/2` in the same style.
 
@@ -49,14 +54,16 @@ Dynamic Type: UI text scales up to 1.3–1.6× (`maxFontSizeMultiplier`). Number
 
 | Component | File | Notes |
 |---|---|---|
-| `PieceShape` | ui/PieceShape.tsx | Hex-nut component. Looks: `source`, `forged`, `socket`. Optional `selected`, `hot`. |
-| `TargetBlueprint` | ui/TargetBlueprint.tsx | The spec sheet. Accessible as "Target: N". |
+| `PieceShape` | ui/PieceShape.tsx | Iron hexagon with a hot rim. Looks: `source`, `forged` (molten amber with a heat glow; `pulse` makes it throb), `socket`. Optional `selected`, `hot`. |
+| `TargetPlate` | ui/TargetPlate.tsx | Riveted iron plate, "STRIKE THIS NUMBER", glowing number. Accessible as "Target: N". |
+| `ForgeBackdrop` | ui/ForgeBackdrop.tsx | Fire glow from below, a faint light from above and five rising embers. Behind every screen. |
+| `GradientFill` | ui/GradientFill.tsx | Measured top-to-bottom SVG gradient for keys, buttons and the bench. |
 | `Tap` | ui/controls.tsx | The only pressable primitive: 48 pt minimum, keyboard focus ring (web), pressed scale. |
-| `ToolKey` | ui/controls.tsx | Steel or blueprint key, symbol or icon. Height scales with the layout. |
-| `Button` | ui/controls.tsx | primary (ember) / forge (flux) / secondary / ghost |
+| `ToolKey` | ui/controls.tsx | Iron key (or red `danger` for clear), symbol or icon. Height scales with the layout. |
+| `Button` | ui/controls.tsx | primary (molten amber) / forge (flux) / secondary (iron) / ghost |
 | `Seal` | ui/Seal.tsx | Completion stamp |
-| `Logo`, `Icon` | ui/ | Original artwork drawn in code. The Forge button's icon shows two pieces flowing into one solid, hot piece with a glowing seam and rising sparks. |
-| `GameBoard` | features/game/GameBoard.tsx | Target and equation (with messages in its grey readout strip) at the top; the five pieces, any forged pieces and the tools anchored at the bottom (a new forged piece appears just above the tools and pushes the pieces up) so they never move while building. |
+| `Logo`, `Icon` | ui/ | Original artwork drawn in code. The Forge button shows a hammer striking with sparks; Check shows the seal. The older "two pieces into one" `forge` icon is still available. |
+| `GameBoard` | features/game/GameBoard.tsx | Target plate and equation (with messages in its dark readout strip) at the top; the five pieces, any forged pieces and the tools anchored at the bottom (a new forged piece appears just above the tools and pushes the pieces up) so they never move while building. |
 | `ProofPanel` | features/game/ProofPanel.tsx | Seal, proof, all-five checklist, time/forges/undos, next action |
 | `AdSlot` | features/ads/AdSlot.tsx | Grey, dashed, labelled "Advertisement". Deliberately unlike any game element. |
 
@@ -75,8 +82,15 @@ Dynamic Type: UI text scales up to 1.3–1.6× (`maxFontSizeMultiplier`). Number
 | Invalid step | 3-swing shake, ±6 px, ~200 ms | None (message and icon only) |
 | Solve | 360 ms seal stamp (scale 1.7 → 1, slight rotation) | Static seal |
 | Screen transitions | Slide | None |
+| Forge fire | Slow 3.2 s flicker of the glow | Static glow |
+| Embers | Five embers rising over 5–8 s | Not drawn |
+| Forged piece | Heat glow throbs over 2.4 s | Static glow |
 
-There are no flashing effects and nothing loops. Reduced motion follows the device setting by default, and can be forced on or off in Settings.
+There are no flashing effects: the only loops are the slow, low-contrast fire, ember and glow cycles above, and all of them stop with reduced motion. Reduced motion follows the device setting by default, and can be forced on or off in Settings.
+
+## Puzzle clock
+
+A number directly below the header shows the time spent on the current puzzle: whole seconds up to 59, then `m:ss`. It has no label on screen. Screen readers hear "Time on this puzzle: 1 minute 5 seconds". The clock counts **only active time**. It pauses when the app goes to the background or is closed, and when the player leaves the play screen. The time is saved with the game (`play.activeMs`) and resumes on return. Solve times in Stats and on the proof panel use the same active time.
 
 ## Sound and haptics
 

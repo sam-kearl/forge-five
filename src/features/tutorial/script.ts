@@ -79,7 +79,7 @@ export const TUTORIAL_STEPS: TutorialStep[] = [
   {
     id: 'target',
     title: 'This is your target',
-    body: 'The blueprint shows the number to build: 18. You win by making an equation that equals it exactly.',
+    body: 'The iron plate shows the number to strike: 18. You win by making an equation that equals it exactly.',
     highlight: () => [],
   },
   {

@@ -6,6 +6,7 @@ import {
   checkInvariants,
   createGame,
   gameReducer,
+  playTimeMs,
   primaryAction,
   sourceLocations,
   type GameAction,
@@ -462,5 +463,38 @@ describe('random play never breaks the piece invariant', () => {
         if (problems.length) throw new Error(`game ${game} step ${step} ${JSON.stringify(a)}: ${problems.join('; ')}`);
       }
     }
+  });
+});
+
+describe('the puzzle clock', () => {
+  it('banks active time without touching history, moves or feedback', () => {
+    const s0 = play(fresh(), P('s0'));
+    const s1 = gameReducer(s0, { type: 'addTime', ms: 4200 });
+    const s2 = gameReducer(s1, { type: 'addTime', ms: 800 });
+    expect(s2.play.activeMs).toBe(5000);
+    expect(s2.play.moves).toBe(s0.play.moves);
+    expect(s2.past).toBe(s0.past);
+    expect(s2.snap).toBe(s0.snap);
+    expect(s2.feedbackSeq).toBe(s0.feedbackSeq);
+  });
+
+  it('ignores empty or negative stretches (a clock that went backwards)', () => {
+    const s = fresh();
+    expect(gameReducer(s, { type: 'addTime', ms: 0 })).toBe(s);
+    expect(gameReducer(s, { type: 'addTime', ms: -50 })).toBe(s);
+  });
+
+  it('still banks the final stretch once solved', () => {
+    const solved = { ...fresh(), status: 'solved' as const };
+    expect(gameReducer(solved, { type: 'addTime', ms: 1500 }).play.activeMs).toBe(1500);
+  });
+
+  it('reports active time, falling back to wall-clock time for older saves', () => {
+    const s = fresh();
+    expect(playTimeMs(s.play)).toBe(0);
+    expect(playTimeMs(s.play, 4000)).toBe(3000);
+    expect(playTimeMs({ ...s.play, solvedAt: 9000 })).toBe(8000);
+    // Time spent in the background is excluded: only banked time counts.
+    expect(playTimeMs({ ...s.play, solvedAt: 900_000, activeMs: 42_000 })).toBe(42_000);
   });
 });

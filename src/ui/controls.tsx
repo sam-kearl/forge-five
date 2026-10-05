@@ -10,6 +10,7 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
+import { GradientFill, GRADIENTS } from './GradientFill';
 import { Icon, type IconName } from './Icon';
 import { focusFromKeyboard } from './inputModality';
 import { colors, fonts, palette, radius, space, TOUCH } from './theme';
@@ -79,7 +80,7 @@ export function ToolKey({
   label,
   onPress,
   disabled,
-  tone = 'steel',
+  tone = 'iron',
   testID,
   height = 52,
 }: {
@@ -88,28 +89,27 @@ export function ToolKey({
   label: string;
   onPress: () => void;
   disabled?: boolean;
-  tone?: 'steel' | 'blueprint' | 'danger';
+  tone?: 'iron' | 'danger';
   testID?: string;
   height?: number;
 }) {
+  const danger = tone === 'danger';
   return (
     <Tap
       testID={testID}
       onPress={onPress}
       disabled={disabled}
       accessibilityLabel={label}
-      style={[styles.key, { height }, tone === 'blueprint' && styles.keyBlueprint, tone === 'danger' && styles.keyDanger]}
+      style={[styles.key, { height }, symbol ? styles.keyRaised : null, danger && styles.keyDanger]}
     >
+      <GradientFill stops={danger ? GRADIENTS.danger : symbol ? GRADIENTS.iron : GRADIENTS.ironLow} />
       <View style={styles.keyInner}>
         {symbol ? (
-          <Text
-            allowFontScaling={false}
-            style={[styles.keySymbol, { fontSize: Math.round(height * 0.54) }, tone === 'blueprint' && { color: palette.blueprintLine }]}
-          >
+          <Text allowFontScaling={false} style={[styles.keySymbol, { fontSize: Math.round(height * 0.66) }]}>
             {symbol}
           </Text>
         ) : (
-          icon && <Icon name={icon} color={palette.chalk} size={22} />
+          icon && <Icon name={icon} color={danger ? '#FFE7DF' : '#CDB8A6'} size={22} />
         )}
       </View>
     </Tap>
@@ -143,8 +143,9 @@ export function Button({
       disabled={disabled}
       accessibilityLabel={title}
       accessibilityHint={accessibilityHint}
-      style={[styles.button, { backgroundColor: k.bg, borderColor: k.border }, style]}
+      style={[styles.button, { backgroundColor: k.bg, borderColor: k.border }, kind === 'primary' && styles.buttonGlow, style]}
     >
+      {k.fill && <GradientFill stops={k.fill} />}
       <View style={styles.buttonInner}>
         {icon && <Icon name={icon} color={k.fg} size={20} />}
         <Text style={[styles.buttonText, { color: k.fg }]} maxFontSizeMultiplier={1.5}>
@@ -158,12 +159,15 @@ export function Button({
 /** Web only: the custom focus ring replaces the browser outline. */
 const WEB_RESET: unknown = { outlineStyle: 'none', cursor: 'pointer' };
 
-const BUTTON_KINDS = {
-  primary: { bg: palette.ember, fg: palette.brassInk, border: '#FFD08A' },
+const BUTTON_KINDS: Record<
+  'primary' | 'forge' | 'secondary' | 'ghost',
+  { bg: string; fg: string; border: string; fill?: typeof GRADIENTS.iron | typeof GRADIENTS.molten }
+> = {
+  primary: { bg: palette.brass, fg: palette.brassInk, border: '#FFE2A6', fill: GRADIENTS.molten },
   forge: { bg: palette.flux, fg: palette.chalk, border: '#FF9A78' },
-  secondary: { bg: palette.steelHi, fg: palette.chalk, border: palette.steelLine },
+  secondary: { bg: palette.steelHi, fg: palette.chalk, border: 'rgba(255,255,255,0.1)', fill: GRADIENTS.iron },
   ghost: { bg: 'transparent', fg: palette.chalk, border: palette.steelLine },
-} as const;
+};
 
 export function SectionLabel({ children }: { children: string }) {
   return (
@@ -183,23 +187,26 @@ const styles = StyleSheet.create({
   key: {
     alignSelf: 'stretch',
     height: 52,
-    borderRadius: radius.md,
-    backgroundColor: palette.steelHi,
+    borderRadius: 14,
+    overflow: 'hidden',
+    backgroundColor: palette.ironBottom,
     borderWidth: 1,
-    borderColor: palette.steelLine,
+    borderColor: 'rgba(255,255,255,0.06)',
   },
-  keyBlueprint: { backgroundColor: palette.blueprintDeep, borderColor: '#2A5C8C' },
-  keyDanger: { backgroundColor: palette.danger, borderColor: palette.dangerEdge },
+  keyRaised: { borderColor: 'rgba(255,255,255,0.07)', borderTopColor: 'rgba(255,255,255,0.14)' },
+  keyDanger: { backgroundColor: palette.dangerDeep, borderColor: 'rgba(255,120,100,0.35)', boxShadow: '0 0 16px rgba(220,40,20,0.25)' },
   keyInner: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  keySymbol: { fontFamily: fonts.bold, fontSize: 28, color: palette.chalk, includeFontPadding: false },
+  keySymbol: { fontFamily: fonts.black, fontSize: 30, color: palette.chalk, includeFontPadding: false },
   button: {
     minHeight: 54,
     borderRadius: radius.lg,
+    overflow: 'hidden',
     borderWidth: 1.5,
     paddingHorizontal: space.lg,
     justifyContent: 'center',
   },
   buttonInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.sm },
+  buttonGlow: { boxShadow: '0 0 24px rgba(255,140,40,0.35)' },
   buttonText: { fontFamily: fonts.bold, fontSize: 18 },
-  sectionLabel: { fontFamily: fonts.semibold, fontSize: 12, letterSpacing: 1.6, color: palette.mist, textTransform: 'uppercase' },
+  sectionLabel: { fontFamily: fonts.display, fontSize: 13, letterSpacing: 3, color: palette.mist, textTransform: 'uppercase' },
 });

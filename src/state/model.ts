@@ -8,6 +8,7 @@ import {
   DIFFICULTIES,
   LEVELS,
   opsUsed,
+  playTimeMs,
   type Difficulty,
   type Expr,
   type Op,
@@ -131,7 +132,7 @@ export function recordSkip(s: Stats): Stats {
 }
 
 export function recordSolve(s: Stats, solution: Expr, play: PlayStats, now: number, day = localDay(now)): Stats {
-  const ms = Math.max(0, (play.solvedAt ?? now) - play.startedAt);
+  const ms = playTimeMs(play, now);
   const used = opsUsed(solution);
   const toolUse = { ...s.toolUse };
   used.forEach((op) => (toolUse[op] += 1));

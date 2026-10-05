@@ -40,6 +40,25 @@ export function useShake(reduce: boolean) {
   return { style: { transform: [{ translateX: x }] }, shake };
 }
 
+/**
+ * A value that runs 0 → 1 over `period` ms and repeats, for glows that
+ * breathe or flicker (map it with an interpolation whose ends match). Holds
+ * at 0 when motion is reduced.
+ */
+export function usePulse(reduce: boolean, period: number) {
+  const v = useState(() => new Animated.Value(0))[0];
+  useEffect(() => {
+    if (reduce) return;
+    const loop = Animated.loop(Animated.timing(v, { toValue: 1, duration: period, easing: Easing.linear, useNativeDriver: NATIVE_DRIVER }));
+    loop.start();
+    return () => {
+      loop.stop();
+      v.setValue(0);
+    };
+  }, [reduce, period, v]);
+  return v;
+}
+
 const SPARKS = 8;
 
 /**
@@ -61,10 +80,10 @@ export function ForgeBurst({ trigger, reduce }: { trigger: number; reduce: boole
 
   const opacity = t.interpolate({ inputRange: [0, 0.2, 1], outputRange: [0, 0.9, 0] });
   if (reduce) {
-    return <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.glow, { opacity }]} />;
+    return <Animated.View style={[StyleSheet.absoluteFill, styles.noTouch, styles.glow, { opacity }]} />;
   }
   return (
-    <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.center]}>
+    <View style={[StyleSheet.absoluteFill, styles.noTouch, styles.center]}>
       <Animated.View
         style={[styles.ring, { opacity, transform: [{ scale: t.interpolate({ inputRange: [0, 1], outputRange: [0.3, 2.2] }) }] }]}
       />
@@ -96,4 +115,5 @@ const styles = StyleSheet.create({
   ring: { width: 80, height: 80, borderRadius: 40, borderWidth: 4, borderColor: palette.flux },
   spark: { position: 'absolute', width: 6, height: 6, borderRadius: 3, backgroundColor: palette.ember },
   glow: { backgroundColor: palette.brass, borderRadius: 16 },
+  noTouch: { pointerEvents: 'none' },
 });

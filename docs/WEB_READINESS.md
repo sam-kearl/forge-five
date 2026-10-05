@@ -7,7 +7,7 @@
 | Capability | Status |
 |---|---|
 | Engine, solver, generator, validation | Identical code path. Pure TypeScript, no platform imports (enforced by a test). |
-| Rendering: pieces, blueprint, seal, icons | react-native-svg renders to SVG in the DOM. |
+| Rendering: pieces, target plate, forge glow, seal, icons | react-native-svg renders to SVG in the DOM. |
 | Phone, tablet and wide layouts | Single column up to 640 px; two columns at ≥ 900 px wide in landscape (checked at 1366×768). |
 | Mouse / touch-screen | All controls are pressables. Tap and click behave the same. |
 | Keyboard play | Digits map to available pieces only (no free constants). `+ - * x /`, ← →, Home/End, Backspace, Enter = the Forge/Check button, `f` = Forge, Ctrl/Cmd-Z undo, Shift+Ctrl/Cmd-Z redo, Esc clears the selection. |

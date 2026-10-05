@@ -18,13 +18,13 @@ Last reviewed: 2026-09-29. Regenerate the transitive list with `npx license-chec
 | expo-linking, expo-constants | 57.0.x | MIT | Required by the router; app version on the About screen |
 | expo-status-bar, expo-system-ui | 57.0.x | MIT | Status-bar style and native root background colour |
 | expo-splash-screen | 57.0.x | MIT | Launch screen while fonts and saved data load |
-| expo-font | 57.0.x | MIT | Loads the Lexend typeface |
+| expo-font | 57.0.x | MIT | Loads the Barlow typefaces |
 | expo-asset | 57.0.x | MIT | Required peer of expo-audio; resolves bundled sound files |
-| @expo-google-fonts/lexend | 0.4.1 | MIT (package) + OFL-1.1 (font files) | Packaged Lexend font files |
+| @expo-google-fonts/barlow, @expo-google-fonts/barlow-condensed | 0.4.x | MIT (package) + OFL-1.1 (font files) | Packaged Barlow and Barlow Condensed font files |
 | @react-native-async-storage/async-storage | 2.2.0 | MIT | Local-only storage of settings, stats and the current puzzle |
 | expo-audio | 57.0.x | MIT | Plays the short sound effects. Recording and background audio are disabled in `app.json`. |
 | expo-haptics | 57.0.x | MIT | Optional vibration feedback |
-| react-native-svg | 15.15.x | MIT | Draws the pieces, blueprint, seal, logo and icons |
+| react-native-svg | 15.15.x | MIT | Draws the pieces, target plate, forge glow, gradients, seal, logo and icons |
 | expo-dev-client | 57.0.x | MIT | Development builds only (not part of production behaviour) |
 | react-native-reanimated, react-native-gesture-handler, react-native-worklets, react-native-drawer-layout, @expo/ui | per expo-router | MIT | Transitive native dependencies of expo-router. Forge Five's own code uses React Native's built-in `Animated` API. |
 
@@ -56,7 +56,7 @@ Most transitive packages are MIT, ISC, BSD or Apache-2.0. The exceptions below a
 
 | Font | Author | Licence | Commercial use | Notes |
 |---|---|---|---|---|
-| Lexend (400–800) | The Lexend Project Authors | SIL Open Font License 1.1 | Permitted, including embedding in apps | Reserved Font Name "RevReading Lexend". It is used unmodified. The OFL text ships in `node_modules/@expo-google-fonts/lexend/LICENSE_FONT` and should be included in the About screen or app bundle notices. |
+| Barlow (400–700) and Barlow Condensed (700–800) | Jeremy Tribby (The Barlow Project Authors) | SIL Open Font License 1.1 | Permitted, including embedding in apps | No reserved font name. They are used unmodified. The OFL text ships in `node_modules/@expo-google-fonts/barlow/LICENSE_FONT` (and the same file in `barlow-condensed`) and should be included in the About screen or app bundle notices. |
 
 ## Sounds
 
@@ -68,7 +68,7 @@ Most transitive packages are MIT, ISC, BSD or Apache-2.0. The exceptions below a
 
 | Asset | Origin |
 |---|---|
-| Hex-nut pieces, blueprint target, seal stamp, logo mark, forge burst | Drawn in code (`src/ui/*`), original |
+| Iron and molten hexagon pieces, riveted target plate, forge fire and embers, hammer icon, seal stamp, logo mark, forge burst | Drawn in code (`src/ui/*`), original |
 | Line icons (undo, redo, spark, seal, gear…) | Drawn in code (`src/ui/Icon.tsx`), original. No icon library is used. |
 | App icon, splash, favicon and adaptive-icon PNGs in `assets/` | Original, rendered from the logo geometry by `scripts/make-icons.js` (no third-party artwork) |
 
