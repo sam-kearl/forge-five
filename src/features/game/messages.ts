@@ -1,6 +1,7 @@
 /**
  * All player-facing wording for the game board: feedback, live readout and
- * screen-reader descriptions. Original copy, written to be gentle and specific.
+ * screen-reader descriptions. Original copy, written to be gentle and specific,
+ * and short: every message fits two lines on a phone (about 64 characters).
  * Pure TypeScript so it can be tested and later localised.
  */
 import {
@@ -59,22 +60,20 @@ export function parseErrorText(snap: Snapshot, e: ParseError, tokens: readonly T
   const opSym = at?.type === 'op' ? OP_SYMBOL[at.op] : null;
   switch (e.kind) {
     case 'empty':
-      return 'Tap a number to start building.';
+      return 'Tap a number to start.';
     case 'missing-operand':
       if (e.incomplete) return opSym ? `Keep going: ${opSym} needs a number after it.` : 'Keep going: add a number.';
       return opSym ? `${opSym} needs a number on each side.` : 'An operation is missing a number.';
     case 'missing-operator': {
       const next = at ? tokenText(snap, at) : '';
-      return next === '('
-        ? 'A number sits right before a bracket. Put an operation between them.'
-        : 'Two numbers are side by side. Put an operation between them.';
+      return next === '(' ? 'Put an operation before the bracket.' : 'Put an operation between the two numbers.';
     }
     case 'unclosed':
       return 'A bracket is still open. Add ) to close it.';
     case 'extra-close':
       return 'There is a ) without a matching (.';
     case 'empty-parens':
-      return 'Those brackets are empty. Put numbers inside or remove them.';
+      return 'Those brackets are empty.';
     case 'unknown-piece':
       return 'That piece is not available.';
   }
@@ -84,11 +83,11 @@ export function ruleText(violation: Violation, op: Op, a: Rational.Rational, b: 
   const step = `${v(a)} ${OP_SYMBOL[op]} ${v(b)}`;
   switch (violation) {
     case 'negative':
-      return `${step} would drop below zero. Every step has to stay at zero or above — try swapping or regrouping.`;
+      return `${step} would drop below zero. Try swapping or regrouping.`;
     case 'fraction':
-      return `${step} doesn't come out even. Every step has to be a whole number.`;
+      return `${step} isn't a whole number. Try another way.`;
     case 'divide-by-zero':
-      return `${step} divides by zero, which can't be done. Try a different grouping.`;
+      return `${step} divides by zero. Try another grouping.`;
     case 'overflow':
       return `${step} makes a number too large to work with.`;
   }
@@ -104,11 +103,11 @@ export function feedbackMessage(state: GameState): Message | null {
     case 'wrong-result': {
       const diff = Math.abs(f.value.num / f.value.den - f.target);
       const lead = diff <= 2 ? 'So close!' : 'Not quite.';
-      return { text: `${lead} Your equation makes ${v(f.value)}, and the target is ${f.target}. Adjust a piece or two.`, tone: 'info' };
+      return { text: `${lead} It makes ${v(f.value)}, not ${f.target}. Adjust a piece or two.`, tone: 'info' };
     }
     case 'not-all-used':
       return {
-        text: `Every piece goes into the equation. Still in the tray: ${listNumbers(snap, f.unused)}.`,
+        text: `Use every piece. Still unused: ${listNumbers(snap, f.unused)}.`,
         tone: 'info',
       };
     case 'parse':
@@ -116,9 +115,9 @@ export function feedbackMessage(state: GameState): Message | null {
     case 'rule':
       return { text: ruleText(f.violation, f.op, f.left, f.right), tone: 'issue' };
     case 'forge-needs-two':
-      return { text: 'Forging joins at least two numbers. Build a small calculation first, like 3 + 4, then forge it.', tone: 'info' };
+      return { text: 'Forge needs at least two numbers, like 3 + 4.', tone: 'info' };
     case 'forge-unbalanced':
-      return { text: 'Your selection cuts a pair of brackets in half. Include both ( and ), or neither.', tone: 'issue' };
+      return { text: 'Your selection splits a pair of brackets.', tone: 'issue' };
     case 'forged': {
       const p = snap.pieces[f.pieceId];
       return p && p.kind === 'forged' ? { text: `Forged ${v(p.value)} from ${recipeOf(p)}.`, tone: 'good' } : null;
@@ -138,7 +137,7 @@ export function feedbackMessage(state: GameState): Message | null {
     case 'redone':
       return { text: 'Redone.', tone: 'neutral' };
     case 'cleared':
-      return { text: 'Bench cleared. All five pieces are back in the tray.', tone: 'neutral' };
+      return { text: 'Cleared. All five pieces are back.', tone: 'neutral' };
     case 'blocked':
       return null;
   }
@@ -158,7 +157,7 @@ export function readoutMessage(state: GameState, a: BenchAnalysis): Message {
   switch (a.kind) {
     case 'empty':
       return snap.tray.length === 1 && snap.pieces[snap.tray[0]].kind === 'forged'
-        ? { text: 'Everything is forged into one piece. Tap Check to test it.', tone: 'info' }
+        ? { text: 'All forged into one piece. Tap Check.', tone: 'info' }
         : { text: 'Tap numbers and tools to build an equation.', tone: 'neutral' };
     case 'incomplete':
       return { text: parseErrorText(snap, a.error), tone: 'neutral' };

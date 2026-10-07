@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { useState } from 'react';
 import { createGame, createSolver, gameReducer, INITIAL_CONFIG, Rational, sourcePiece, type GameState, type Puzzle } from '../engine';
-import { GameBoard } from '../features/game/GameBoard';
+import { fitBench, GameBoard } from '../features/game/GameBoard';
 
 jest.mock('react-native-safe-area-context', () => ({
   SafeAreaView: ({ children }: { children: React.ReactNode }) => children,
@@ -102,7 +102,7 @@ describe('GameBoard accessibility and tap-only play', () => {
     await tap('key-undo');
     expect(screen.queryByText('Undone.')).toBeNull();
     await tap('key-clear');
-    expect(screen.queryByText(/Bench cleared/)).toBeNull();
+    expect(screen.queryByText(/Cleared\. All five/)).toBeNull();
   });
 
   it('explains invalid steps in words', async () => {
@@ -112,5 +112,28 @@ describe('GameBoard accessibility and tap-only play', () => {
     await tap('key-sub');
     await tap('tray-s0');
     expect(screen.getByText(/2 − 8 would drop below zero/)).toBeTruthy();
+  });
+});
+
+describe('fitting the equation on one line', () => {
+  const longest = ['piece', 'op', 'piece', 'op', 'piece', 'op', 'piece', 'op', 'piece'].map((type) => ({ type }));
+  const width = (f: ReturnType<typeof fitBench>, n: number, ops: number) =>
+    2 + f.pad * 2 + n * f.pieceW + ops * f.opW + (n + ops) * f.gap + 7;
+
+  it('fits five pieces and four operators on an iPhone 17 with 4 pt gaps', () => {
+    const f = fitBench(longest, 402 - 32, 1);
+    expect(f.gap).toBe(4);
+    expect(f.pad).toBe(4);
+    expect(f.pieceW).toBeGreaterThanOrEqual(48);
+    expect(width(f, 5, 4)).toBeLessThanOrEqual(370);
+  });
+
+  it('still fits on the narrowest phones', () => {
+    const f = fitBench(longest, 320 - 32, 1);
+    expect(width(f, 5, 4)).toBeLessThanOrEqual(288);
+  });
+
+  it('keeps short equations at full size', () => {
+    expect(fitBench([{ type: 'piece' }, { type: 'op' }], 370, 1).pieceW).toBe(56);
   });
 });

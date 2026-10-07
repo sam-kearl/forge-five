@@ -26,6 +26,9 @@ function isSavedGame(v: unknown): v is GameState {
   return !!g && g.version === 1 && !!g.puzzle && Array.isArray(g.puzzle.sources) && !!g.snap && Array.isArray(g.snap.tray);
 }
 
+/** A gap this long between one-second clock checks means the app was frozen, not played. */
+const STALL_MS = 15_000;
+
 let seedCounter = 0;
 const freshSeed = () => mixSeed(Date.now(), ++seedCounter, Math.floor(Math.random() * 0xffffffff));
 
@@ -181,6 +184,27 @@ export function useGameSession() {
       pause();
     };
   }, [persist, bankClock, resumeClock]);
+
+  // If the app's code was frozen (a computer or simulator sleeping without the app being told it went
+  // to the background), count only up to the moment it froze, then carry on from now.
+  useEffect(() => {
+    if (runningSince === null) return;
+    let last = Date.now();
+    const id = setInterval(() => {
+      const now = Date.now();
+      const since = sinceRef.current;
+      if (now - last > STALL_MS && since !== null && stateRef.current) {
+        const s = gameReducer(stateRef.current, { type: 'addTime', ms: last - since });
+        stateRef.current = s;
+        setState(s);
+        persist(s);
+        sinceRef.current = now;
+        setRunningSince(now);
+      }
+      last = now;
+    }, 1000);
+    return () => clearInterval(id);
+  }, [runningSince, persist]);
 
   const dispatch = useCallback(
     (action: GameAction) => {

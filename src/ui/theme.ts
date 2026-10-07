@@ -26,6 +26,7 @@ export const palette = {
   blueprintLine: '#C99A72', // engraved labels on iron
   coolant: '#FF8A2A', // hot rim: available pieces
   coolantDeep: '#7A2A0A',
+  rim: '#E8702A', // the solid outline of a piece
   ember: '#FFB347', // warm: selected, cursor, sparks
   flux: '#FF6A2A', // hot: forging moment
   fire: '#FF6014', // the forge glow

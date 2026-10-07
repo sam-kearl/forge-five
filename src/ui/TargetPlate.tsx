@@ -7,10 +7,11 @@ import { fonts, palette, radius } from './theme';
  * The target, cast into a riveted iron plate lit from below by the forge,
  * with the number glowing like hot metal.
  */
-export function TargetPlate({ target, width, compact }: { target: number; width: number; compact?: boolean }) {
+export function TargetPlate({ target, width, scale = 1, compact }: { target: number; width: number; scale?: number; compact?: boolean }) {
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
-  const h = compact ? 84 : 104;
-  const numSize = compact ? 48 : 64;
+  // Compact (the tutorial, where the coach bubble needs room) is a little smaller; otherwise the number is 64 pt on phones.
+  const h = Math.round((compact ? 76 : 92) * scale);
+  const numSize = Math.round((compact ? 52 : 64) * scale);
   const rivets = [
     [16, 16],
     [width - 16, 16],
@@ -53,7 +54,7 @@ export function TargetPlate({ target, width, compact }: { target: number; width:
           <Circle key={i} cx={cx} cy={cy} r={4} fill={`url(#rivet${uid})`} />
         ))}
       </Svg>
-      <Text style={styles.label} maxFontSizeMultiplier={1.3} importantForAccessibility="no">
+      <Text style={[styles.label, { fontSize: Math.round(13 * scale) }]} maxFontSizeMultiplier={1.2} importantForAccessibility="no">
         STRIKE THIS NUMBER
       </Text>
       <Text

@@ -8,15 +8,17 @@ import { ProofPanel } from '../features/game/ProofPanel';
 import { formatTimer, spokenTimer } from '../features/game/timer';
 import { useGameSession } from '../features/game/useGameSession';
 import { useApp } from '../state/AppContext';
+import { timerShown } from '../state/model';
 import { Tap } from '../ui/controls';
 import { ForgeBackdrop } from '../ui/ForgeBackdrop';
+import { GradientFill, GRADIENTS } from '../ui/GradientFill';
 import { Icon } from '../ui/Icon';
 import { fonts, palette, radius, space } from '../ui/theme';
 
 const headerTitle = (p: Puzzle) => levelOfPuzzle(p).name + (p.difficulty ? ` · ${DIFFICULTY_NAMES[p.difficulty]}` : '');
 
 export default function Play() {
-  const { reduceMotion, stats } = useApp();
+  const { reduceMotion, stats, settings } = useApp();
   const { state, dispatch, nextPuzzle, runningSince } = useGameSession();
   const [confirmNew, setConfirmNew] = useState(false);
 
@@ -60,6 +62,7 @@ export default function Play() {
             accessibilityLabel={confirmNew ? 'Tap again to deal a new puzzle' : 'New puzzle'}
             style={[styles.newBtn, confirmNew && styles.newBtnConfirm]}
           >
+            {confirmNew && <GradientFill stops={GRADIENTS.molten} />}
             <View style={styles.newInner}>
               <Icon name="shuffle" color={confirmNew ? palette.brassInk : '#FFB878'} size={18} />
               <Text style={[styles.newText, confirmNew && { color: palette.brassInk }]} maxFontSizeMultiplier={1.3}>
@@ -71,7 +74,9 @@ export default function Play() {
           <View style={{ width: 48 }} />
         )}
       </View>
-      {state?.status === 'playing' && <PuzzleTimer bankedMs={state.play.activeMs ?? 0} runningSince={runningSince} />}
+      {state?.status === 'playing' && timerShown(settings) && (
+        <PuzzleTimer bankedMs={state.play.activeMs ?? 0} runningSince={runningSince} />
+      )}
 
       {!state ? (
         <View style={styles.loading}>
@@ -126,12 +131,13 @@ const styles = StyleSheet.create({
   },
   newBtn: {
     borderRadius: radius.pill,
+    overflow: 'hidden',
     paddingHorizontal: space.md,
     borderWidth: 1,
     borderColor: 'rgba(255,140,60,0.35)',
     backgroundColor: 'rgba(255,110,40,0.08)',
   },
-  newBtnConfirm: { backgroundColor: palette.ember, borderColor: palette.ember },
+  newBtnConfirm: { backgroundColor: palette.brass, borderColor: '#FFE2A6', boxShadow: '0 0 18px rgba(255,140,40,0.4)' },
   newInner: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6 },
   newText: { fontFamily: fonts.bold, fontSize: 15, color: '#FFB878' },
   timer: {

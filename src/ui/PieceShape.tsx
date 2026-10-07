@@ -77,11 +77,6 @@ function PieceShapeImpl({ label, look, width, selected, hot, pulse }: Props) {
             </>
           ) : (
             <>
-              <LinearGradient id={rimId} x1="0.25" y1="0" x2="0.75" y2="1">
-                <Stop offset="0" stopColor="#FF9A3A" />
-                <Stop offset="0.6" stopColor="#B83A10" />
-                <Stop offset="1" stopColor="#5A1A06" />
-              </LinearGradient>
               <LinearGradient id={coreId} x1="0" y1="0" x2="0" y2="1">
                 <Stop offset="0" stopColor="#34291F" />
                 <Stop offset="1" stopColor="#16100C" />
@@ -96,7 +91,8 @@ function PieceShapeImpl({ label, look, width, selected, hot, pulse }: Props) {
           </>
         ) : (
           <>
-            <Polygon points={outer} fill={`url(#${rimId})`} />
+            {/* Pieces have a solid hot-orange rim; forged pieces keep their molten gradient. */}
+            <Polygon points={outer} fill={look === 'forged' ? `url(#${rimId})` : palette.rim} />
             <Polygon points={inner} fill={`url(#${coreId})`} />
           </>
         )}

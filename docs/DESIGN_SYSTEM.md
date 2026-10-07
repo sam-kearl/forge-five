@@ -54,24 +54,39 @@ Dynamic Type: UI text scales up to 1.3–1.6× (`maxFontSizeMultiplier`). Number
 
 | Component | File | Notes |
 |---|---|---|
-| `PieceShape` | ui/PieceShape.tsx | Iron hexagon with a hot rim. Looks: `source`, `forged` (molten amber with a heat glow; `pulse` makes it throb), `socket`. Optional `selected`, `hot`. |
+| `PieceShape` | ui/PieceShape.tsx | Iron hexagon with a solid hot-orange rim (`rim`, #E8702A). Looks: `source`, `forged` (molten amber with a heat glow; `pulse` makes it throb), `socket`. Optional `selected`, `hot`. |
 | `TargetPlate` | ui/TargetPlate.tsx | Riveted iron plate, "STRIKE THIS NUMBER", glowing number. Accessible as "Target: N". |
 | `ForgeBackdrop` | ui/ForgeBackdrop.tsx | Fire glow from below, a faint light from above and five rising embers. Behind every screen. |
 | `GradientFill` | ui/GradientFill.tsx | Measured top-to-bottom SVG gradient for keys, buttons and the bench. |
 | `Tap` | ui/controls.tsx | The only pressable primitive: 48 pt minimum, keyboard focus ring (web), pressed scale. |
 | `ToolKey` | ui/controls.tsx | Iron key (or red `danger` for clear), symbol or icon. Height scales with the layout. |
+| New button | app/play.tsx | Ghost amber pill; after one tap it turns molten amber and reads "Sure?" for 3 s. |
 | `Button` | ui/controls.tsx | primary (molten amber) / forge (flux) / secondary (iron) / ghost |
 | `Seal` | ui/Seal.tsx | Completion stamp |
 | `Logo`, `Icon` | ui/ | Original artwork drawn in code. The Forge button shows a hammer striking with sparks; Check shows the seal. The older "two pieces into one" `forge` icon is still available. |
-| `GameBoard` | features/game/GameBoard.tsx | Target plate and equation (with messages in its dark readout strip) at the top; the five pieces, any forged pieces and the tools anchored at the bottom (a new forged piece appears just above the tools and pushes the pieces up) so they never move while building. |
+| `GameBoard` | features/game/GameBoard.tsx | Target plate, one-line equation with its two-line message strip, the reserved forged row above the five pieces, then the keys. Spare height is shared evenly between them (see Layout). |
 | `ProofPanel` | features/game/ProofPanel.tsx | Seal, proof, all-five checklist, time/forges/undos, next action |
 | `AdSlot` | features/ads/AdSlot.tsx | Grey, dashed, labelled "Advertisement". Deliberately unlike any game element. |
 
 ## Layout
 
-- **Phone portrait (primary).** A scrolling top area (target, tray, forged pieces, bench) with the tools anchored at the bottom. The target compacts when the screen height is under 760 pt.
-- **Tablet.** The same column up to 640 pt wide. Pieces, bench tokens and keys scale by up to 1.3×.
-- **Wide landscape (≥ 900 wide, landscape).** Two columns: target and tray on the left; bench and tools on the right.
+One rule on every screen size. From top to bottom the sections are:
+1. Header and timer.
+2. Target plate (64 pt number on phones).
+3. Equation: a 60 pt box plus a fixed two-line message strip.
+4. Forged row and the five pieces.
+5. Keys and the 50 pt Forge/Check button.
+
+**Nothing moves while you play.** Every section has a fixed height:
+- The equation is always one line. `fitBench` shrinks the hexagons, and the operators only if needed, so 5 pieces + 4 operators fit. That gives about 50 pt hexagons on an iPhone 17, with 4 pt gaps and 4 pt of padding inside the box.
+- The message strip is always two lines tall. Messages are written to fit in about 64 characters, and a test enforces this.
+- The forged row's space is always kept, even when empty. Forged pieces appear above the five pieces and never push them. At most two forged pieces can exist at once, and they share the row.
+
+**Spare height is shared evenly** between the sections by flexible gaps. When there is none (small phones, large text), the screen scrolls instead. The layout uses the space the browser actually gives the page: on an iPhone 17 in Safari that is about 402 × 728 pt, and the crowded two-forged-pieces state still fits.
+
+- **Phones:** one column.
+- **Tablets:** the same column up to 640 pt wide. Pieces, text, keys and the target scale by up to 1.3×.
+- **Wide landscape (≥ 900 wide):** two columns, each spaced the same way. Target and equation are on the left; forged row, pieces and keys are on the right.
 
 ## Motion (`motion` tokens)
 
@@ -91,6 +106,10 @@ There are no flashing effects: the only loops are the slow, low-contrast fire, e
 ## Puzzle clock
 
 A number directly below the header shows the time spent on the current puzzle: whole seconds up to 59, then `m:ss`. It has no label on screen. Screen readers hear "Time on this puzzle: 1 minute 5 seconds". The clock counts **only active time**. It pauses when the app goes to the background or is closed, and when the player leaves the play screen. The time is saved with the game (`play.activeMs`) and resumes on return. Solve times in Stats and on the proof panel use the same active time.
+
+Two more rules:
+- **Frozen time doesn't count.** If the app's code is frozen for more than 15 seconds without being told it went to the background (a computer or simulator sleeping), that stretch is skipped.
+- **Settings › Play › Show timer** hides the clock. It keeps counting while hidden, so Stats stay accurate.
 
 ## Sound and haptics
 

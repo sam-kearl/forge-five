@@ -30,6 +30,8 @@ export interface Settings {
   level?: number;
   /** Chosen difficulty (free choice). Missing on settings saved before difficulty existed. */
   difficulty?: Difficulty;
+  /** Show the puzzle clock on the play screen. Missing on older settings (shown). The clock always runs. */
+  showTimer?: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -39,6 +41,7 @@ export const DEFAULT_SETTINGS: Settings = {
   motion: 'system',
   level: DEFAULT_LEVEL,
   difficulty: DEFAULT_DIFFICULTY,
+  showTimer: true,
 };
 
 export function isSettings(v: unknown): v is Settings {
@@ -50,13 +53,16 @@ export function isSettings(v: unknown): v is Settings {
     typeof s.haptics === 'boolean' &&
     (s.motion === 'system' || s.motion === 'reduced' || s.motion === 'full') &&
     (s.level === undefined || typeof s.level === 'number') &&
-    (s.difficulty === undefined || DIFFICULTIES.includes(s.difficulty))
+    (s.difficulty === undefined || DIFFICULTIES.includes(s.difficulty)) &&
+    (s.showTimer === undefined || typeof s.showTimer === 'boolean')
   );
 }
 
 /** The level to play: the saved choice if it still exists, otherwise the default. */
 export const selectedLevel = (s: Settings): number =>
   s.level !== undefined && LEVELS.some((l) => l.id === s.level) ? s.level : DEFAULT_LEVEL;
+
+export const timerShown = (s: Settings): boolean => s.showTimer !== false;
 
 export const selectedDifficulty = (s: Settings): Difficulty => s.difficulty ?? DEFAULT_DIFFICULTY;
 

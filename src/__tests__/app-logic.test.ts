@@ -1,5 +1,17 @@
-import { createGame, gameReducer, generatePuzzle, parseTokens, pieceExpr, type GameAction, type GameState } from '../engine';
+import {
+  analyzeBench,
+  createGame,
+  gameReducer,
+  generatePuzzle,
+  parseTokens,
+  pieceExpr,
+  Rational,
+  type Feedback,
+  type GameAction,
+  type GameState,
+} from '../engine';
 import { cuesFor } from '../features/game/cues';
+import { feedbackMessage, parseErrorText, readoutMessage, ruleText } from '../features/game/messages';
 import { formatTimer, spokenTimer } from '../features/game/timer';
 import { initialGate, LOCKOUT_MS, MAX_ATTEMPTS, pressDigit } from '../features/parents/gate';
 import { createTutorialGame, TUTORIAL_STEPS } from '../features/tutorial/script';
@@ -17,6 +29,7 @@ import {
   EMPTY_STATS,
   favouriteTool,
   isSettings,
+  timerShown,
   isStats,
   localDay,
   recordDeal,
@@ -399,5 +412,69 @@ describe('puzzle timer text', () => {
     expect(spokenTimer(47_000)).toBe('47 seconds');
     expect(spokenTimer(61_000)).toBe('1 minute 1 second');
     expect(spokenTimer(125_000)).toBe('2 minutes 5 seconds');
+  });
+});
+
+describe('timer setting', () => {
+  it('shows the timer by default, including for settings saved before the switch existed', () => {
+    expect(timerShown(DEFAULT_SETTINGS)).toBe(true);
+    const { showTimer: _omit, ...old } = DEFAULT_SETTINGS;
+    expect(isSettings(old)).toBe(true);
+    expect(timerShown(old)).toBe(true);
+    expect(timerShown({ ...DEFAULT_SETTINGS, showTimer: false })).toBe(false);
+    expect(isSettings({ ...DEFAULT_SETTINGS, showTimer: 'yes' })).toBe(false);
+  });
+});
+
+describe('message length', () => {
+  // Two lines in the message strip on a phone hold about 64 characters.
+  const MAX = 64;
+  const puzzle = generatePuzzle({ seed: 5 }).puzzle;
+  const ids = puzzle.sources.map((p) => p.id);
+  const base = createGame(puzzle, 0);
+  const forgedState = [
+    { type: 'insertPiece', pieceId: ids[0] },
+    { type: 'insertOp', op: 'add' },
+    { type: 'insertPiece', pieceId: ids[1] },
+    { type: 'forge', now: 1 },
+  ].reduce((st, a) => gameReducer(st, a as GameAction), base);
+  const forgedId = forgedState.snap.tray.find((id) => forgedState.snap.pieces[id].kind === 'forged')!;
+  const big = Rational.int(48);
+  const feedbacks: Feedback[] = [
+    { kind: 'solved' },
+    { kind: 'wrong-result', value: Rational.int(147), target: 50 },
+    { kind: 'not-all-used', unused: ids.slice(0, 4) },
+    { kind: 'forge-needs-two' },
+    { kind: 'forge-unbalanced' },
+    { kind: 'forged', pieceId: forgedId },
+    { kind: 'broken-apart', pieceId: forgedId },
+    { kind: 'unavailable-piece' },
+    { kind: 'nothing-to-undo' },
+    { kind: 'nothing-to-redo' },
+    { kind: 'undone' },
+    { kind: 'redone' },
+    { kind: 'cleared' },
+  ] as Feedback[];
+
+  it.each(feedbacks.map((f) => [f.kind, f]))('feedback "%s" fits two lines', (_k, f) => {
+    const st = { ...forgedState, feedback: f } as GameState;
+    expect(feedbackMessage(st)?.text.length ?? 0).toBeLessThanOrEqual(MAX);
+  });
+
+  it('parse and rule explanations fit two lines', () => {
+    const kinds = ['empty', 'missing-operand', 'missing-operator', 'unclosed', 'extra-close', 'empty-parens', 'unknown-piece'] as const;
+    for (const kind of kinds)
+      for (const incomplete of [true, false]) {
+        const text = parseErrorText(base.snap, { kind, index: 0, incomplete });
+        expect(text.length).toBeLessThanOrEqual(MAX);
+      }
+    for (const v of ['negative', 'fraction', 'divide-by-zero', 'overflow'] as const)
+      for (const op of ['add', 'sub', 'mul', 'div'] as const)
+        expect(ruleText(v, op, big, Rational.int(50)).length).toBeLessThanOrEqual(MAX);
+  });
+
+  it('the live readout fits two lines', () => {
+    const st = forgedState;
+    expect(readoutMessage(st, analyzeBench(st)).text.length).toBeLessThanOrEqual(MAX);
   });
 });

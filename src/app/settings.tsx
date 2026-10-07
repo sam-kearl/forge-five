@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, Switch, Text, View } from 'react-native';
 import { useApp } from '../state/AppContext';
-import type { MotionPreference } from '../state/model';
+import { timerShown, type MotionPreference } from '../state/model';
 import { Button, SectionLabel, Tap } from '../ui/controls';
 import { Screen } from '../ui/Screen';
 import { fonts, palette, radius, space } from '../ui/theme';
@@ -38,6 +38,12 @@ export default function Settings() {
             if (v) setTimeout(() => cue(undefined, 'select'), 50);
           }}
         />
+      </View>
+
+      <View style={styles.section}>
+        <SectionLabel>Play</SectionLabel>
+        <ToggleRow label="Show timer" value={timerShown(settings)} onChange={(v) => updateSettings({ showTimer: v })} />
+        <Text style={styles.help}>Hides the clock above the target. Your solve times are still recorded in Stats.</Text>
       </View>
 
       <View style={styles.section}>
@@ -131,6 +137,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: palette.steel,
     borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.07)',
     paddingHorizontal: space.lg,
   },
   rowLabel: { fontFamily: fonts.medium, fontSize: 16, color: palette.chalk, flexShrink: 1 },
