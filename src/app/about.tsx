@@ -1,11 +1,17 @@
 import Constants from 'expo-constants';
+import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { FONT_LICENCE } from '../legal/fontLicence';
+import { Button } from '../ui/controls';
 import { Logo } from '../ui/Logo';
 import { Screen } from '../ui/Screen';
 import { fonts, palette, space } from '../ui/theme';
 
 const CREDITS: { name: string; detail: string }[] = [
-  { name: 'Barlow and Barlow Condensed typefaces', detail: 'By Jeremy Tribby. SIL Open Font License 1.1.' },
+  {
+    name: 'Barlow and Barlow Condensed typefaces',
+    detail: 'Copyright 2017 The Barlow Project Authors (https://github.com/jpt/barlow). SIL Open Font License 1.1.',
+  },
   { name: 'Sound effects', detail: 'Original, synthesised for Forge Five.' },
   { name: 'Illustrations & icons', detail: 'Original, drawn in code for Forge Five.' },
   { name: 'Open-source software', detail: 'React Native, Expo and other libraries under their respective licences (MIT and similar).' },
@@ -13,6 +19,7 @@ const CREDITS: { name: string; detail: string }[] = [
 
 export default function About() {
   const version = Constants.expoConfig?.version ?? '1.0.0';
+  const [showLicence, setShowLicence] = useState(false);
   return (
     <Screen title="About">
       <View style={styles.hero}>
@@ -25,6 +32,17 @@ export default function About() {
           <Text style={styles.detail}>{c.detail}</Text>
         </View>
       ))}
+      <Button
+        title={showLicence ? 'Hide font licence' : 'Show font licence'}
+        kind="ghost"
+        onPress={() => setShowLicence((v) => !v)}
+        style={styles.licenceBtn}
+      />
+      {showLicence && (
+        <Text style={styles.licence} selectable>
+          {FONT_LICENCE}
+        </Text>
+      )}
     </Screen>
   );
 }
@@ -34,5 +52,7 @@ const styles = StyleSheet.create({
   version: { fontFamily: fonts.regular, fontSize: 13, color: palette.mist, marginTop: space.sm },
   item: { marginTop: space.md },
   name: { fontFamily: fonts.semibold, fontSize: 15, color: palette.chalk },
+  licenceBtn: { marginTop: space.lg },
+  licence: { fontFamily: fonts.regular, fontSize: 12, lineHeight: 17, color: palette.mist, marginTop: space.md },
   detail: { fontFamily: fonts.regular, fontSize: 14, color: palette.mist, lineHeight: 20 },
 });

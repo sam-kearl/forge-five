@@ -73,7 +73,11 @@ export function isNearDuplicate(a: PuzzleSignature, b: PuzzleSignature): boolean
   return shared >= 4;
 }
 
-/** Shareable id: the level (if any) plus the seed, which together reproduce the puzzle exactly. */
+/**
+ * Shareable id: the level and difficulty (if any) plus the seed. With the same recent-puzzle
+ * history the seed reproduces the puzzle exactly; a different history can steer generation to a
+ * different puzzle, so the id identifies a deal rather than guaranteeing a replay.
+ */
 export const puzzleIdForSeed = (seed: number, level?: number, difficulty?: Difficulty) => {
   const tag = (level !== undefined ? `L${level}` : '') + (difficulty ? difficulty[0].toUpperCase() : '');
   return tag ? `F5-${tag}-${(seed >>> 0).toString(36)}` : `F5-${(seed >>> 0).toString(36)}`;

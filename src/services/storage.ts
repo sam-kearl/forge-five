@@ -30,7 +30,6 @@ export const STORAGE_KEYS = {
   tutorial: 'ff.tutorial.v1',
   entitlements: 'ff.entitlements.v1',
   recent: 'ff.recent.v1',
-  progress: 'ff.progress.v1',
 } as const;
 
 /** Read and parse JSON, falling back safely on missing or corrupt data. */

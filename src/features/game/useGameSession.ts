@@ -4,7 +4,6 @@ import {
   configForLevel,
   createGame,
   gameReducer,
-  generatePuzzle,
   generatePuzzleAsync,
   INITIAL_CONFIG,
   levelOfPuzzle,
@@ -29,6 +28,14 @@ function isSavedGame(v: unknown): v is GameState {
 /** A gap this long between one-second clock checks means the app was frozen, not played. */
 const STALL_MS = 15_000;
 
+/** The saved recent-puzzle list, checked entry by entry (a malformed entry would break the duplicate check). */
+function isRecentList(v: unknown): v is PuzzleSignature[] {
+  return (
+    Array.isArray(v) &&
+    v.every((e) => !!e && typeof e.target === 'number' && Array.isArray(e.values) && e.values.every((x: unknown) => typeof x === 'number'))
+  );
+}
+
 let seedCounter = 0;
 const freshSeed = () => mixSeed(Date.now(), ++seedCounter, Math.floor(Math.random() * 0xffffffff));
 
@@ -46,13 +53,6 @@ const optionsFor = (recent: readonly PuzzleSignature[], c: Choice) => ({
 });
 
 const matches = (p: Puzzle | null | undefined, c: Choice) => !!p && levelOfPuzzle(p).id === c.level && p.difficulty === c.difficulty;
-
-/** Synchronous generation: only used when no preloaded puzzle is ready yet. */
-function makePuzzle(recent: readonly PuzzleSignature[], c: Choice): Puzzle {
-  const { puzzle, report } = generatePuzzle(optionsFor(recent, c));
-  if (__DEV__ && report.tier > 0) console.log('[forge] puzzle generation relaxed', report);
-  return puzzle;
-}
 
 /** Generation spread across frames so it never blocks taps or animations. */
 async function makePuzzleAsync(recent: readonly PuzzleSignature[], c: Choice): Promise<Puzzle> {
@@ -80,6 +80,13 @@ export function useGameSession() {
   const nextRef = useRef<Puzzle | null>(null);
   const countedSolve = useRef<string | null>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const alive = useRef(true);
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+    };
+  }, []);
   // The puzzle clock runs only while the puzzle is on screen and the app is active.
   // Finished stretches are banked into play.activeMs; `runningSince` marks the current one.
   const sinceRef = useRef<number | null>(null);
@@ -110,15 +117,33 @@ export function useGameSession() {
     [services],
   );
 
+  // At most one puzzle is generated at a time; a New tap waits for the one already on its way.
+  const inFlight = useRef<{ choice: Choice; promise: Promise<Puzzle> } | null>(null);
+  const preloadTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const generate = useCallback((choice: Choice) => {
+    const cur = inFlight.current;
+    if (cur && cur.choice.level === choice.level && cur.choice.difficulty === choice.difficulty) return cur.promise;
+    const promise = makePuzzleAsync(recentRef.current, choice);
+    const entry = { choice, promise };
+    inFlight.current = entry;
+    const done = () => {
+      if (inFlight.current === entry) inFlight.current = null;
+    };
+    promise.then(done, done);
+    return promise;
+  }, []);
+
   const preloadNext = useCallback(() => {
     // Defer so it never competes with an animation or a tap.
-    setTimeout(async () => {
+    clearTimeout(preloadTimer.current);
+    preloadTimer.current = setTimeout(async () => {
       const choice = choiceRef.current;
       if (matches(nextRef.current, choice)) return;
-      const p = await makePuzzleAsync(recentRef.current, choice);
+      const p = await generate(choice);
       if (matches(p, choiceRef.current)) nextRef.current = p;
     }, 600);
-  }, []);
+  }, [generate]);
+  useEffect(() => () => clearTimeout(preloadTimer.current), []);
 
   const startPuzzle = useCallback(
     (puzzle: Puzzle) => {
@@ -140,16 +165,13 @@ export function useGameSession() {
   useEffect(() => {
     let alive = true;
     (async () => {
-      recentRef.current = await loadJson<PuzzleSignature[]>(
-        services.storage,
-        STORAGE_KEYS.recent,
-        [],
-        Array.isArray as (v: unknown) => v is PuzzleSignature[],
-      );
-      const saved = await loadJson<GameState | null>(services.storage, STORAGE_KEYS.game, null);
+      recentRef.current = await loadJson<PuzzleSignature[]>(services.storage, STORAGE_KEYS.recent, [], isRecentList);
+      let saved = await loadJson<GameState | null>(services.storage, STORAGE_KEYS.game, null);
       if (!alive) return;
       // Resume an unfinished puzzle only if it belongs to the level the player has chosen.
       if (saved && isSavedGame(saved) && saved.status === 'playing' && matches(saved.puzzle, choiceRef.current)) {
+        // Saved before the clock existed: time this one by the wall clock (see PlayStats.untimed).
+        if (saved.play.activeMs === undefined) saved = { ...saved, play: { ...saved.play, activeMs: 0, untimed: true } };
         stateRef.current = saved;
         setState(saved);
         resumeClock();
@@ -233,14 +255,32 @@ export function useGameSession() {
     [persist, cue, updateStats, bankClock],
   );
 
-  const nextPuzzle = useCallback(() => {
+  const dealing = useRef(false);
+  const nextPuzzle = useCallback(async () => {
+    if (dealing.current) return;
     const cur = stateRef.current;
     if (cur && cur.status === 'playing' && cur.play.moves > 0) updateStats(recordSkip);
-    const preloaded = matches(nextRef.current, choiceRef.current) ? nextRef.current : null;
-    const p = preloaded ?? makePuzzle(recentRef.current, choiceRef.current);
-    nextRef.current = null;
-    startPuzzle(p);
-  }, [startPuzzle, updateStats]);
+    const choice = choiceRef.current;
+    const preloaded = matches(nextRef.current, choice) ? nextRef.current : null;
+    if (preloaded) {
+      nextRef.current = null;
+      startPuzzle(preloaded);
+      return;
+    }
+    // Not ready yet: show "Preparing a puzzle…" and wait, rather than freezing the screen while generating.
+    dealing.current = true;
+    sinceRef.current = null;
+    setRunningSince(null);
+    stateRef.current = null;
+    setState(null);
+    try {
+      const p = await generate(choice);
+      nextRef.current = null;
+      if (alive.current) startPuzzle(p);
+    } finally {
+      dealing.current = false;
+    }
+  }, [startPuzzle, updateStats, generate]);
 
   return { state, dispatch, nextPuzzle, runningSince };
 }

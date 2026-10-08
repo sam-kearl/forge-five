@@ -8,12 +8,13 @@ Tick every item for each release candidate. Items marked ⚖️ need professiona
 - [ ] Bundle id / package name replaced (`com.example.forgefive` is a placeholder).
 - [x] Original app icon, adaptive icon (foreground, background, monochrome), splash image and favicon (`npm run icons`). Consider a professional icon pass before launch.
 - [ ] Version and build numbers bumped (`version`, `ios.buildNumber`, `android.versionCode`).
-- [ ] Barlow / Barlow Condensed OFL licence text included in the app's notices.
+- [x] Barlow / Barlow Condensed OFL licence text included in the app's notices (About › Show font licence).
 - [ ] Store screenshots for small phone, large phone and iPad (portrait); descriptions with original marketing copy that never compares Forge Five to other games.
 
 ## 2. Monetisation
 
 - [ ] Ad provider chosen and reviewed ⚖️ (A1–A6), or ads left off (`NoAdService`) for launch.
+- [ ] Decide whether v1 ships Parents / Remove ads at all. Without a real store integration, store and web builds hide them automatically (`NoPurchaseService`).
 - [ ] Real purchase implementation behind `PurchaseService`. Non-consumable "remove ads" product configured in App Store Connect and Play Console ⚖️ (G2–G4).
 - [ ] Restore Purchases works on a fresh install and a second device.
 - [ ] Parental gate reviewed ⚖️ (G1).

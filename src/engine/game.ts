@@ -62,6 +62,11 @@ export interface PlayStats {
    * Absent in games saved before the timer existed.
    */
   readonly activeMs?: number;
+  /**
+   * Set on games saved before the clock existed: their active time is unknown,
+   * so a solve is timed by the wall clock instead (never a falsely fast best).
+   */
+  readonly untimed?: boolean;
   readonly moves: number;
   readonly forges: number;
   readonly undos: number;

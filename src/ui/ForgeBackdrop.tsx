@@ -1,7 +1,7 @@
 import { useEffect, useId, useState } from 'react';
 import { Animated, Easing, StyleSheet, useWindowDimensions, View } from 'react-native';
 import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
-import { usePulse } from './motion';
+import { useAppVisible, usePulse } from './motion';
 import { NATIVE_DRIVER, palette } from './theme';
 
 /** Embers: horizontal position (fraction of width), start height, size, rise time and delay (ms). */
@@ -21,6 +21,7 @@ const EMBERS = [
 export function ForgeBackdrop({ reduce }: { reduce: boolean }) {
   const { width, height } = useWindowDimensions();
   const flicker = usePulse(reduce, 3200);
+  const visible = useAppVisible();
   const glowH = Math.min(560, height * 0.65);
   // Unique gradient ids: screens stay mounted under each other, and Safari mixes up duplicated ids.
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
@@ -56,7 +57,7 @@ export function ForgeBackdrop({ reduce }: { reduce: boolean }) {
           <Rect x={0} y={0} width={width} height={glowH} fill={`url(#forgeFire${uid})`} />
         </Svg>
       </Animated.View>
-      {!reduce && EMBERS.map((e, i) => <Ember key={i} {...e} left={e.x * width} rise={Math.min(520, height * 0.6)} />)}
+      {!reduce && visible && EMBERS.map((e, i) => <Ember key={i} {...e} left={e.x * width} rise={Math.min(520, height * 0.6)} />)}
     </View>
   );
 }

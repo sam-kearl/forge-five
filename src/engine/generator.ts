@@ -3,7 +3,7 @@ import { INITIAL_CONFIG, type GameConfig, type QualityThresholds } from './confi
 import { leaf, node, type Expr } from './expr';
 import { sourcePiece, type SourcePiece } from './pieces';
 import { isNearDuplicate, puzzleIdForSeed, type GenerationStrategy, type Puzzle, type PuzzleSignature } from './puzzle';
-import type { Difficulty } from './levels';
+import { difficultyFor, levelById, type Difficulty } from './levels';
 import { evaluatePuzzle, type RejectionReason } from './quality';
 import * as R from './rational';
 import { createRng, type Rng } from './rng';
@@ -108,6 +108,15 @@ export interface GenerationReport {
 export interface GenerationResult {
   puzzle: Puzzle;
   report: GenerationReport;
+}
+
+/**
+ * The difficulty to show. Tiers 0 and 1 enforce the requested band; the last-resort tier and the
+ * hand-made fallbacks don't, so they are labelled by their measured solution count instead.
+ */
+function labelFor(options: GenerateOptions, tier: number, distinctSolutions: number): Difficulty | undefined {
+  if (tier < 2 || options.level === undefined || options.difficulty === undefined) return options.difficulty;
+  return difficultyFor(levelById(options.level), distinctSolutions);
 }
 
 function relaxed(q: QualityThresholds, tier: number): QualityThresholds {
@@ -220,7 +229,7 @@ function* generationSteps(options: GenerateOptions): Generator<void, GenerationR
       }
 
       // Independent verification + quality, regardless of how the candidate was made.
-      const q = evaluatePuzzle(pieces, target, config, thresholds, constructed);
+      const q = evaluatePuzzle(pieces, target, config, thresholds, constructed, true);
       if ('unsolvable' in q) {
         reject('unsolvable');
         continue;
@@ -231,9 +240,9 @@ function* generationSteps(options: GenerateOptions): Generator<void, GenerationR
       }
 
       const puzzle: Puzzle = {
-        id: puzzleIdForSeed(options.seed, options.level, options.difficulty),
+        id: puzzleIdForSeed(options.seed, options.level, labelFor(options, tier, q.metrics.distinctSolutions)),
         level: options.level,
-        difficulty: options.difficulty,
+        difficulty: labelFor(options, tier, q.metrics.distinctSolutions),
         seed: options.seed >>> 0,
         target,
         sources: rng.shuffle(pieces),
@@ -262,9 +271,9 @@ function* generationSteps(options: GenerateOptions): Generator<void, GenerationR
     if ('unsolvable' in q) continue;
     return {
       puzzle: {
-        id: puzzleIdForSeed(options.seed, options.level, options.difficulty),
+        id: puzzleIdForSeed(options.seed, options.level, labelFor(options, 3, q.metrics.distinctSolutions)),
         level: options.level,
-        difficulty: options.difficulty,
+        difficulty: labelFor(options, 3, q.metrics.distinctSolutions),
         seed: options.seed >>> 0,
         target: f.target,
         sources: rng.shuffle(pieces),

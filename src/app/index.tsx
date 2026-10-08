@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { router } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 import { AdSlot } from '../features/ads/AdSlot';
+import { purchasesAvailable } from '../services/purchases';
 import { useApp } from '../state/AppContext';
 import { DIFFICULTIES, DIFFICULTY_NAMES, LEVELS } from '../engine';
 import { localDay, selectedDifficulty, selectedLevel, visibleStreak } from '../state/model';
@@ -12,7 +13,7 @@ import { Screen } from '../ui/Screen';
 import { fonts, palette, radius, space } from '../ui/theme';
 
 export default function Home() {
-  const { stats, tutorialCompleted, settings, updateSettings } = useApp();
+  const { stats, tutorialCompleted, settings, updateSettings, services } = useApp();
   const level = selectedLevel(settings);
   const difficulty = selectedDifficulty(settings);
   const [today] = useState(() => localDay(Date.now()));
@@ -36,6 +37,7 @@ export default function Home() {
               key={l.id}
               testID={`level-${l.id}`}
               onPress={() => updateSettings({ level: l.id })}
+              role="radio"
               selected={on}
               accessibilityLabel={`${l.name}, numbers ${l.min} to ${l.max}`}
               style={[styles.level, on && styles.levelOn]}
@@ -62,6 +64,7 @@ export default function Home() {
               key={d}
               testID={`difficulty-${d}`}
               onPress={() => updateSettings({ difficulty: d })}
+              role="radio"
               selected={on}
               accessibilityLabel={`${DIFFICULTY_NAMES[d]} difficulty`}
               style={[styles.level, styles.difficulty, on && styles.levelOn]}
@@ -122,7 +125,7 @@ export default function Home() {
       <View style={styles.nav}>
         <NavTile icon="chart" label="Stats" onPress={() => router.push('/stats')} />
         <NavTile icon="gear" label="Settings" onPress={() => router.push('/settings')} />
-        <NavTile icon="lock" label="Parents" onPress={() => router.push('/parents')} />
+        {purchasesAvailable(services.purchases) && <NavTile icon="lock" label="Parents" onPress={() => router.push('/parents')} />}
       </View>
 
       <AdSlot placement="home" solvedCount={stats.solved} />

@@ -7,12 +7,12 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "env": { "EXPO_PUBLIC_ADS": "mock" },
+      "env": { "EXPO_PUBLIC_ADS": "mock", "EXPO_PUBLIC_PURCHASES": "mock" },
       "ios": { "simulator": true }
     },
     "preview": {
       "distribution": "internal",
-      "env": { "EXPO_PUBLIC_ADS": "mock" }
+      "env": { "EXPO_PUBLIC_ADS": "mock", "EXPO_PUBLIC_PURCHASES": "mock" }
     },
     "production": {
       "autoIncrement": true

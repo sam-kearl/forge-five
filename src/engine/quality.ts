@@ -85,6 +85,13 @@ export function evaluatePuzzle(
   config: GameConfig,
   thresholds: QualityThresholds = config.quality,
   witness?: Expr,
+  /**
+   * The generator only needs to know whether a candidate is rejected, so it can
+   * stop early: checks that don't need the solution list run first, and
+   * enumeration stops at the first too-easy solution. Metrics of a rejected
+   * candidate are then partial. Other callers get the full analysis.
+   */
+  stopOnReject = false,
 ): QualityEvaluation | { unsolvable: true } {
   const rules = config.rules;
   const solver = createSolver(
@@ -94,6 +101,33 @@ export function evaluatePuzzle(
   const t = R.int(target);
   const proof = solver.solve(t);
   if (!proof) return { unsolvable: true };
+
+  const values = sources.map((s) => s.value.num);
+  const targetInSources = values.includes(target);
+  const cheap: RejectionReason[] = [];
+  if (
+    targetInSources &&
+    thresholds.targetEchoCollapseEffort >= 0 &&
+    echoCollapseEffort(sources, target, config) <= thresholds.targetEchoCollapseEffort
+  ) {
+    cheap.push('target-echo');
+  }
+  if (thresholds.rejectSumOfAll && values.reduce((a, b) => a + b, 0) === target) cheap.push('sum-of-all');
+  const quickMetrics = (): QualityMetrics => ({
+    distinctSolutions: 1,
+    solutionCountCapped: true,
+    easiestEffort: effortOf(proof, rules),
+    easiestMaxIntermediate: maxIntermediate(proof, rules),
+    witnessMaxIntermediate: maxIntermediate(witness ?? proof, rules),
+    targetInSources,
+    requiresDivision: false,
+    requiresSubtraction: false,
+    requiresMultiplication: false,
+    minDepth: depth(proof),
+    commonFactor: values.reduce(gcd),
+    nearTarget: values.some((v) => Math.abs(v - target) <= 2),
+  });
+  if (stopOnReject && cheap.length) return { metrics: quickMetrics(), easiest: proof, witness: witness ?? proof, rejections: cheap };
 
   // Collect distinct solutions as they stream in. With a difficulty band, stop as soon as
   // the decision is known: one past a finite maximum means "too many" (rejected), and
@@ -105,7 +139,14 @@ export function evaluatePuzzle(
   let stoppedEarly = false;
   const raw = solver.enumerate(t, thresholds.enumerationLimit, (e) => {
     const k = canonicalKey(e);
-    if (!distinct.has(k)) distinct.set(k, e);
+    if (!distinct.has(k)) {
+      distinct.set(k, e);
+      // One solution easier than allowed already decides "too easy".
+      if (stopOnReject && effortOf(e, rules) < thresholds.minEasiestEffort) {
+        stoppedEarly = true;
+        return true;
+      }
+    }
     if (distinct.size >= stopAt) {
       stoppedEarly = true;
       return true;
@@ -137,8 +178,6 @@ export function evaluatePuzzle(
     allMul &&= ops.has('mul');
   }
 
-  const values = sources.map((s) => s.value.num);
-  const targetInSources = values.includes(target);
   const w = witness ?? proof;
   const metrics: QualityMetrics = {
     distinctSolutions: solutions.length,
@@ -155,15 +194,7 @@ export function evaluatePuzzle(
     nearTarget: values.some((v) => Math.abs(v - target) <= 2),
   };
 
-  const rejections: RejectionReason[] = [];
-  if (
-    targetInSources &&
-    thresholds.targetEchoCollapseEffort >= 0 &&
-    echoCollapseEffort(sources, target, config) <= thresholds.targetEchoCollapseEffort
-  ) {
-    rejections.push('target-echo');
-  }
-  if (thresholds.rejectSumOfAll && values.reduce((a, b) => a + b, 0) === target) rejections.push('sum-of-all');
+  const rejections: RejectionReason[] = [...cheap];
   if (solutions.length < thresholds.minDistinctSolutions) rejections.push('too-few-solutions');
   if (band && (solutions.length < band.min || solutions.length > band.max)) rejections.push('wrong-difficulty');
   if (easiestMax > thresholds.maxEasiestIntermediate) rejections.push('large-intermediates');

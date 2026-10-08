@@ -24,6 +24,8 @@ interface BaseProps {
   onAccessibilityAction?: (e: AccessibilityActionEvent) => void;
   disabled?: boolean;
   selected?: boolean;
+  /** 'radio' for one choice in a group (announced as "radio button, checked"); `selected` is then its checked state. */
+  role?: 'button' | 'radio';
   style?: StyleProp<ViewStyle>;
   children: ReactNode;
   testID?: string;
@@ -42,6 +44,7 @@ export function Tap({
   onAccessibilityAction,
   disabled,
   selected,
+  role = 'button',
   style,
   children,
   testID,
@@ -54,10 +57,10 @@ export function Tap({
       onLongPress={disabled ? undefined : onLongPress}
       onFocus={() => setFocused(focusFromKeyboard())}
       onBlur={() => setFocused(false)}
-      accessibilityRole="button"
+      accessibilityRole={role}
       accessibilityLabel={accessibilityLabel}
       accessibilityHint={accessibilityHint}
-      accessibilityState={{ disabled: !!disabled, selected: !!selected }}
+      accessibilityState={role === 'radio' ? { disabled: !!disabled, checked: !!selected } : { disabled: !!disabled, selected: !!selected }}
       accessibilityActions={accessibilityActions}
       onAccessibilityAction={onAccessibilityAction}
       hitSlop={4}
@@ -65,8 +68,8 @@ export function Tap({
         { minWidth: TOUCH, minHeight: TOUCH, opacity: disabled ? 0.45 : 1 },
         style,
         pressed && !disabled && styles.pressed,
-        focused && styles.focus,
         Platform.OS === 'web' && (WEB_RESET as ViewStyle),
+        focused && styles.focus,
       ]}
     >
       {children}
@@ -179,11 +182,11 @@ export function SectionLabel({ children }: { children: string }) {
 
 const styles = StyleSheet.create({
   pressed: { transform: [{ scale: 0.96 }], opacity: 0.85 },
-  focus: {
-    borderWidth: 3,
-    borderColor: colors.focus,
-    borderRadius: radius.md,
-  },
+  // Keyboard focus ring. On the web it's an outline, which doesn't take up space or shift the layout.
+  focus:
+    Platform.OS === 'web'
+      ? ({ outlineColor: colors.focus, outlineStyle: 'solid', outlineWidth: 3, outlineOffset: 2, borderRadius: radius.md } as ViewStyle)
+      : { borderWidth: 3, borderColor: colors.focus, borderRadius: radius.md },
   key: {
     alignSelf: 'stretch',
     height: 52,

@@ -20,7 +20,7 @@ Status: initial release candidate, with **no ad or purchase SDK integrated** (bo
 | react-native-svg, fonts, router, safe-area, screens, splash, system-ui | No | UI | n/a |
 | expo-dev-client | Development builds only | Developer tooling | Absent from production behaviour |
 | **Advertising SDK** | **Not integrated.** `NoAdService` (default) or `MockAdService` (dev) | Future non-personalised ads | Behind the `AdService` interface. Remove-ads purchase. |
-| **Purchase SDK** | **Not integrated.** `MockPurchaseService` | Future remove-ads purchase | Behind the `PurchaseService` interface |
+| **Purchase SDK** | **Not integrated.** `NoPurchaseService` in store and web builds (Parents screen and Remove ads hidden). `MockPurchaseService` only in development and in builds made with `EXPO_PUBLIC_PURCHASES=mock` (the EAS development and preview profiles) | Future remove-ads purchase | Behind the `PurchaseService` interface |
 
 ## Permissions
 
@@ -42,7 +42,7 @@ All keys live in AsyncStorage (native storage on device; `localStorage` on web).
 
 | Key | Contents | Purpose | Removal |
 |---|---|---|---|
-| `ff.settings.v1` | `sound`, `haptics`, `motion` (system/reduced/full) | Preferences | Delete app |
+| `ff.settings.v1` | `sound`, `haptics`, `motion` (system/reduced/full), `level`, `difficulty`, `showTimer` | Preferences | Delete app |
 | `ff.stats.v1` | Counts (solved, dealt, skipped), total and fastest solve time, forges, tool usage counts, day streak, best streak, last solve date (local calendar day) | Stats screen | Settings → Reset statistics |
 | `ff.game.v1` | Current puzzle (numbers, target, seed, one stored solution), current equation, undo history (last 60 steps), timings | Resume after interruption | Replaced on each new puzzle |
 | `ff.recent.v1` | Target and sorted numbers of the last 30 puzzles | Avoid near-repeats | Rolling |

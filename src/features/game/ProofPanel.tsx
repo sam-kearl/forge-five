@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, type ReactNode } from 'react';
+import { AccessibilityInfo, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { formatExpr, playTimeMs, type GameState } from '../../engine';
 import { AdSlot } from '../ads/AdSlot';
 import { Button } from '../../ui/controls';
@@ -37,6 +37,10 @@ export function ProofPanel({
   children?: ReactNode;
 }) {
   const { puzzle, solution, play } = state;
+  // The board (and its Check button) disappears on solve, so tell screen readers what happened.
+  useEffect(() => {
+    if (state.solution) AccessibilityInfo.announceForAccessibility(`Solved! ${spokenExpr(state.solution)} equals ${state.puzzle.target}.`);
+  }, [state.solution, state.puzzle.target]);
   if (!solution) return null;
   const proof = formatExpr(solution);
   const spokenProof = `${spokenExpr(solution)} equals ${puzzle.target}`;

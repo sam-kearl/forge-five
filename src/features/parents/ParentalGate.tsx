@@ -2,11 +2,17 @@ import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Tap } from '../../ui/controls';
 import { fonts, palette, radius, space } from '../../ui/theme';
-import { initialGate, pressDigit } from './gate';
+import { initialGate, pressDigit, type GateState } from './gate';
+
+/**
+ * Failed attempts and any lockout last for the whole app session, so leaving
+ * and reopening the Parents screen doesn't reset the wait.
+ */
+const sessionLock: Pick<GateState, 'failures' | 'lockedUntil'> = { failures: 0, lockedUntil: null };
 
 /** Adult check shown before purchases, restore and anything that leaves the app. */
 export function ParentalGate({ onPass }: { onPass: () => void }) {
-  const [gate, setGate] = useState(() => initialGate());
+  const [gate, setGate] = useState(() => ({ ...initialGate(), ...sessionLock }));
   const [now, setNow] = useState(() => Date.now());
   const keypad = useMemo(() => [1, 2, 3, 4, 5, 6, 7, 8, 9, 0], []);
   const locked = gate.lockedUntil !== null && now < gate.lockedUntil;
@@ -14,6 +20,11 @@ export function ParentalGate({ onPass }: { onPass: () => void }) {
   useEffect(() => {
     if (gate.passed) onPass();
   }, [gate.passed, onPass]);
+
+  useEffect(() => {
+    sessionLock.failures = gate.failures;
+    sessionLock.lockedUntil = gate.lockedUntil;
+  }, [gate.failures, gate.lockedUntil]);
 
   useEffect(() => {
     if (!locked) return;
@@ -30,7 +41,7 @@ export function ParentalGate({ onPass }: { onPass: () => void }) {
       <Text style={styles.prompt} accessibilityLabel={`Enter: ${gate.challenge.prompt}`}>
         {gate.challenge.prompt.toUpperCase()}
       </Text>
-      <View style={styles.dots} accessibilityLabel={`${gate.entered.length} of 3 entered`}>
+      <View style={styles.dots} accessible accessibilityLabel={`${gate.entered.length} of 3 entered`}>
         {[0, 1, 2].map((i) => (
           <View key={i} style={[styles.dot, i < gate.entered.length && styles.dotOn]} />
         ))}

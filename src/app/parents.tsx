@@ -1,8 +1,8 @@
 import { router } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { ParentalGate } from '../features/parents/ParentalGate';
-import { REMOVE_ADS_PRODUCT_ID, type Product } from '../services/purchases';
+import { purchasesAvailable, REMOVE_ADS_PRODUCT_ID, type Product } from '../services/purchases';
 import { useApp } from '../state/AppContext';
 import { Button } from '../ui/controls';
 import { Screen } from '../ui/Screen';
@@ -15,6 +15,8 @@ export default function Parents() {
   const [busy, setBusy] = useState<'buy' | 'restore' | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const onPass = useCallback(() => setPassed(true), []);
+  // Guards against a double tap starting two store requests before the busy state re-renders.
+  const inFlight = useRef(false);
 
   useEffect(() => {
     if (!passed) return;
@@ -25,9 +27,12 @@ export default function Parents() {
   }, [passed, services]);
 
   const buy = async () => {
+    if (inFlight.current) return;
+    inFlight.current = true;
     setBusy('buy');
     setMessage(null);
     const r = await purchaseRemoveAds(REMOVE_ADS_PRODUCT_ID);
+    inFlight.current = false;
     setBusy(null);
     setMessage(
       r.status === 'success'
@@ -41,9 +46,12 @@ export default function Parents() {
   };
 
   const restore = async () => {
+    if (inFlight.current) return;
+    inFlight.current = true;
     setBusy('restore');
     setMessage(null);
     const r = await restorePurchases();
+    inFlight.current = false;
     setBusy(null);
     setMessage(
       r.status === 'restored'
@@ -55,6 +63,14 @@ export default function Parents() {
           : `Couldn’t reach the store: ${r.message} Please try again later.`,
     );
   };
+
+  if (!purchasesAvailable(services.purchases)) {
+    return (
+      <Screen title="Parents">
+        <Text style={[styles.text, styles.unavailable]}>Forge Five has no ads or purchases in this version.</Text>
+      </Screen>
+    );
+  }
 
   return (
     <Screen title="Parents">
@@ -116,5 +132,6 @@ const styles = StyleSheet.create({
   text: { fontFamily: fonts.regular, fontSize: 15, lineHeight: 22, color: palette.mist },
   owned: { fontFamily: fonts.semibold, fontSize: 16, color: palette.success },
   message: { fontFamily: fonts.medium, fontSize: 14, color: palette.chalk, lineHeight: 20 },
+  unavailable: { marginTop: space.xl, textAlign: 'center' },
   devNote: { fontFamily: fonts.regular, fontSize: 12, color: palette.mist, textAlign: 'center' },
 });

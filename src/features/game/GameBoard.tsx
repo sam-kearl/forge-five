@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AccessibilityInfo, Animated, Platform, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import {
   analyzeBench,
@@ -44,6 +44,7 @@ export interface GameBoardProps {
 }
 
 const OPS: Op[] = ['add', 'sub', 'mul', 'div'];
+const BREAK_H = 40;
 
 /** Routine confirmations that would only add noise on screen (still announced to screen readers). */
 const QUIET_FEEDBACK = new Set<Feedback['kind']>([
@@ -82,13 +83,16 @@ export function GameBoard({ state, dispatch, reduceMotion, highlight = [], compa
 
   // Announce feedback to screen readers and animate forge/invalid moments.
   // Each forge gets a new feedbackSeq, which re-triggers the burst animation.
-  const burst = state.feedback?.kind === 'forged' ? state.feedbackSeq : 0;
+  // A restored game doesn't replay the burst of its last forge.
+  const [firstSeq] = useState(state.feedbackSeq);
+  const burst = state.feedback?.kind === 'forged' && state.feedbackSeq !== firstSeq ? state.feedbackSeq : 0;
   const { style: shakeStyle, shake } = useShake(reduceMotion);
   const lastSeq = useRef(state.feedbackSeq);
   useEffect(() => {
     if (state.feedbackSeq === lastSeq.current) return;
     lastSeq.current = state.feedbackSeq;
-    if (feedback) AccessibilityInfo.announceForAccessibility(feedback.text);
+    // Android already reads the message strip (a live region), so only quiet messages are announced there.
+    if (feedback && (Platform.OS !== 'android' || !shownFeedback)) AccessibilityInfo.announceForAccessibility(feedback.text);
     if (feedback?.tone === 'issue') shake();
   }, [state.feedbackSeq]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -103,17 +107,24 @@ export function GameBoard({ state, dispatch, reduceMotion, highlight = [], compa
   const forgedInTray = snap.tray.filter((id) => snap.pieces[id].kind === 'forged');
   const bench = fitBench(snap.bench, contentWidth, scale);
   // At most two forged pieces can be in the tray at once (each uses two or more of the five), so they share one row.
-  const forgedRowH = Math.round(pieceW * 0.88) + space.xs;
   const forgedW = Math.min(pieceW, Math.round(64 * scale));
+  // Tall enough for the piece, or for its one-line recipe plus the 40 pt break button, whichever is taller.
+  const recipeLine = Math.round(22 * scale);
+  const forgedRowH = Math.max(Math.round(forgedW * 0.88), recipeLine + BREAK_H) + space.xs;
+  const forgedCapH = Math.round(18 * scale) + space.xs;
 
   const targetArea = <TargetPlate target={puzzle.target} width={contentWidth} scale={scale} compact={compact} />;
 
   const trayArea = (
     <View>
       {/* Forged pieces sit above the five. Their space is always reserved, so nothing moves when you forge or break apart. */}
-      <View style={{ height: forgedRowH + 20 }}>
+      <View style={{ height: forgedRowH + forgedCapH }}>
         {forgedInTray.length > 0 && (
-          <Text style={[styles.forgedCaption, capSize]} accessibilityRole="header" maxFontSizeMultiplier={1.2}>
+          <Text
+            style={[styles.forgedCaption, capSize, { height: forgedCapH, lineHeight: forgedCapH }]}
+            accessibilityRole="header"
+            maxFontSizeMultiplier={1}
+          >
             FORGED
           </Text>
         )}
@@ -137,9 +148,11 @@ export function GameBoard({ state, dispatch, reduceMotion, highlight = [], compa
                 {/* Recipe and break control sit beside the piece, so two forged pieces fit in one row. */}
                 <View style={styles.forgedInfo}>
                   <Text
-                    style={[styles.recipe, { fontSize: Math.round(18 * scale) }]}
-                    numberOfLines={2}
-                    maxFontSizeMultiplier={1.2}
+                    style={[styles.recipe, { fontSize: Math.round(18 * scale), lineHeight: recipeLine }]}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.6}
+                    maxFontSizeMultiplier={1}
                     importantForAccessibility="no"
                   >
                     {recipeOf(p)}
@@ -201,7 +214,13 @@ export function GameBoard({ state, dispatch, reduceMotion, highlight = [], compa
 
   const benchArea = (
     <Animated.View style={shakeStyle}>
-      <Text style={[styles.benchCaption, capSize]} accessibilityRole="header" maxFontSizeMultiplier={1.2}>
+      {/* The caption carries the spoken summary; the tokens below stay individually reachable by screen readers. */}
+      <Text
+        style={[styles.benchCaption, capSize]}
+        accessibilityRole="header"
+        accessibilityLabel={`Equation. ${spokenBench(snap)} ${analysis.kind === 'value' ? `Current value ${pieceValueTextFromAnalysis(analysis)}.` : ''}`}
+        maxFontSizeMultiplier={1.2}
+      >
         FORGE YOUR EQUATION HERE
       </Text>
       <View style={styles.benchFrame}>
@@ -211,12 +230,7 @@ export function GameBoard({ state, dispatch, reduceMotion, highlight = [], compa
           style={[styles.bench, { height: Math.round(60 * scale), paddingHorizontal: bench.pad }]}
         >
           <GradientFill stops={GRADIENTS.bench} />
-          <View
-            style={[styles.benchTokens, { gap: bench.gap }]}
-            accessible
-            accessibilityLabel={`${spokenBench(snap)} ${analysis.kind === 'value' ? `Current value ${pieceValueTextFromAnalysis(analysis)}.` : ''}`}
-            accessibilityHint="Use the tools below to edit. Tap a token to select it."
-          >
+          <View style={[styles.benchTokens, { gap: bench.gap, justifyContent: bench.fits ? 'center' : 'flex-end' }]}>
             {snap.bench.length === 0 && (
               <Text style={styles.benchEmpty} maxFontSizeMultiplier={1.4}>
                 Your equation takes shape here
@@ -389,6 +403,8 @@ interface BenchFit {
   opW: number;
   gap: number;
   pad: number;
+  /** False when even the smallest sizes can't fit everything on the line. */
+  fits: boolean;
 }
 
 /**
@@ -411,7 +427,10 @@ export function fitBench(tokens: readonly { type: string }[], contentWidth: numb
     opW = Math.round(opFont * 0.6);
     pieceW = Math.floor(room(opW) / pieces);
   }
-  return { pieceW: Math.max(28, Math.min(Math.round(56 * scale), pieceW)), opFont, opW, gap, pad };
+  const finalW = Math.max(28, Math.min(Math.round(56 * scale), pieceW));
+  // Longer than 5 pieces + 4 operators (extra operators): keep the end, where the cursor is, in view.
+  const fits = room(opW) >= finalW * pieces;
+  return { pieceW: finalW, opFont, opW, gap, pad, fits };
 }
 
 /** An equal-width cell in a tool row; draws the tutorial spotlight when `on`. */
@@ -454,9 +473,9 @@ function Readout({ message, scale }: { message: Message; scale: number }) {
   const value = split > 0 ? message.text.slice(0, split) : message.text.startsWith('=') ? message.text : null;
   const rest = value === null ? message.text : message.text.slice(value.length).trim();
   const fontSize = Math.round(14 * scale);
-  const lineHeight = Math.round(18 * scale);
+  const lineHeight = Math.round(20 * scale);
   return (
-    <View style={[styles.readout, { height: lineHeight * 2 + 14 }]} accessibilityLiveRegion="polite">
+    <View style={[styles.readout, { height: lineHeight * 2 + 10 }]} accessibilityLiveRegion="polite">
       {message.tone === 'issue' && <Icon name="info" size={16} color={TONE_COLOR.issue} />}
       <Text
         style={[styles.readoutText, { fontSize, lineHeight, color: TONE_COLOR[message.tone] }]}
@@ -464,7 +483,7 @@ function Readout({ message, scale }: { message: Message; scale: number }) {
         maxFontSizeMultiplier={1.15}
       >
         {value !== null && (
-          <Text style={[styles.readoutValue, { fontSize: Math.round(22 * scale) }]}>
+          <Text style={[styles.readoutValue, { fontSize: Math.round(20 * scale), lineHeight }]}>
             {value}
             {rest ? '  ' : ''}
           </Text>
@@ -497,6 +516,8 @@ function useKeyboard(state: GameState, dispatch: (a: GameAction) => void) {
       if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
       const { state: s, dispatch: d } = ref.current;
       const k = e.key;
+      // Leave browser shortcuts (find, zoom, switching tabs, cut) alone; only Cmd/Ctrl+Z is the game's.
+      if ((e.metaKey || e.ctrlKey || e.altKey) && k.toLowerCase() !== 'z') return;
       if (/^[0-9]$/.test(k)) {
         digits += k;
         clearTimeout(timer);
@@ -559,7 +580,7 @@ const styles = StyleSheet.create({
   caption: { fontFamily: fonts.display, fontSize: 13, letterSpacing: 3, color: palette.mist },
   captionMuted: { fontFamily: fonts.regular, fontSize: 12, color: palette.dim },
   benchCaption: { fontFamily: fonts.display, fontSize: 13, letterSpacing: 3, color: palette.mist, marginBottom: space.xs },
-  forgedCaption: { fontFamily: fonts.display, fontSize: 13, letterSpacing: 3, color: '#FFB878', marginBottom: -2 },
+  forgedCaption: { fontFamily: fonts.display, fontSize: 13, letterSpacing: 3, color: '#FFB878' },
   trayRow: { flexDirection: 'row', justifyContent: 'center' },
   pieceTap: { alignItems: 'center', justifyContent: 'center', borderRadius: radius.md },
   slotNote: { fontFamily: fonts.medium, fontSize: 11, color: palette.dim, height: 15, marginTop: 1 },
@@ -568,8 +589,9 @@ const styles = StyleSheet.create({
   forgedItem: { flexDirection: 'row', alignItems: 'center', gap: space.sm, flexShrink: 1, maxWidth: '50%' },
   forgedInfo: { alignItems: 'flex-start', flexShrink: 1 },
   recipe: { fontFamily: fonts.display, fontSize: 18, color: palette.amberText },
-  breakBtn: { minHeight: 36, minWidth: 0, borderRadius: radius.pill, paddingHorizontal: space.xs },
-  breakInner: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 36 },
+  // 40 pt tall plus Tap's 4 pt hit slop on each side gives a 48 pt touch target.
+  breakBtn: { height: BREAK_H, minHeight: BREAK_H, minWidth: 64, borderRadius: radius.pill, paddingHorizontal: space.xs },
+  breakInner: { flexDirection: 'row', alignItems: 'center', gap: 4, height: BREAK_H },
   breakText: { fontFamily: fonts.medium, fontSize: 12, color: palette.mist },
   benchFrame: {
     borderRadius: radius.lg + 2,
@@ -579,7 +601,7 @@ const styles = StyleSheet.create({
     boxShadow: '0 0 24px rgba(255,100,30,0.12)',
   },
   bench: { backgroundColor: palette.plateBottom, justifyContent: 'center' },
-  benchTokens: { flexDirection: 'row', flexWrap: 'nowrap', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  benchTokens: { flexDirection: 'row', flexWrap: 'nowrap', alignItems: 'center', overflow: 'hidden' },
   benchEmpty: { fontFamily: fonts.regular, fontSize: 15, color: palette.dim },
   tokenWrap: { flexDirection: 'row', alignItems: 'center' },
   // Bench tokens are as narrow as their contents (the bench is 60+ pt tall, so taps stay easy).

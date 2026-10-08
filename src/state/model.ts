@@ -58,6 +58,25 @@ export function isSettings(v: unknown): v is Settings {
   );
 }
 
+/**
+ * Saved settings, recovered field by field: one unreadable or outdated field
+ * falls back to its default without discarding the player's other choices
+ * (for example Sound off or Reduced motion).
+ */
+export function normaliseSettings(raw: unknown): Settings {
+  if (!raw || typeof raw !== 'object') return DEFAULT_SETTINGS;
+  const r = raw as Record<string, unknown>;
+  const s: Settings = { ...DEFAULT_SETTINGS };
+  if (typeof r.sound === 'boolean') s.sound = r.sound;
+  if (typeof r.haptics === 'boolean') s.haptics = r.haptics;
+  if (r.motion === 'system' || r.motion === 'reduced' || r.motion === 'full') s.motion = r.motion;
+  if (typeof r.level === 'number' && LEVELS.some((l) => l.id === r.level)) s.level = r.level;
+  if (typeof r.difficulty === 'string' && (DIFFICULTIES as readonly string[]).includes(r.difficulty))
+    s.difficulty = r.difficulty as Difficulty;
+  if (typeof r.showTimer === 'boolean') s.showTimer = r.showTimer;
+  return s;
+}
+
 /** The level to play: the saved choice if it still exists, otherwise the default. */
 export const selectedLevel = (s: Settings): number =>
   s.level !== undefined && LEVELS.some((l) => l.id === s.level) ? s.level : DEFAULT_LEVEL;
@@ -116,6 +135,29 @@ export function isStats(v: unknown): v is Stats {
   return !!s && s.version === 1 && typeof s.solved === 'number' && typeof s.dealt === 'number' && !!s.toolUse;
 }
 
+/** Saved statistics with any missing or unreadable counter repaired (to its empty value), so nothing shows as NaN. */
+export function normaliseStats(raw: unknown): Stats {
+  if (!raw || typeof raw !== 'object') return EMPTY_STATS;
+  const r = raw as Record<string, unknown>;
+  const num = (v: unknown, d: number) => (typeof v === 'number' && Number.isFinite(v) && v >= 0 ? v : d);
+  const tools = (r.toolUse && typeof r.toolUse === 'object' ? r.toolUse : {}) as Record<string, unknown>;
+  const day = (v: unknown) => (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null);
+  return {
+    version: 1,
+    solved: num(r.solved, 0),
+    dealt: num(r.dealt, 0),
+    skipped: num(r.skipped, 0),
+    totalSolveMs: num(r.totalSolveMs, 0),
+    fastestMs: typeof r.fastestMs === 'number' && r.fastestMs >= 0 ? r.fastestMs : null,
+    forges: num(r.forges, 0),
+    solvesWithForge: num(r.solvesWithForge, 0),
+    toolUse: { add: num(tools.add, 0), sub: num(tools.sub, 0), mul: num(tools.mul, 0), div: num(tools.div, 0) },
+    dayStreak: num(r.dayStreak, 0),
+    bestDayStreak: num(r.bestDayStreak, 0),
+    lastSolveDay: day(r.lastSolveDay),
+  };
+}
+
 /** Local calendar day as YYYY-MM-DD. */
 export function localDay(ms: number): string {
   const d = new Date(ms);
@@ -138,7 +180,7 @@ export function recordSkip(s: Stats): Stats {
 }
 
 export function recordSolve(s: Stats, solution: Expr, play: PlayStats, now: number, day = localDay(now)): Stats {
-  const ms = playTimeMs(play, now);
+  const ms = play.untimed ? Math.max(0, (play.solvedAt ?? now) - play.startedAt) : playTimeMs(play, now);
   const used = opsUsed(solution);
   const toolUse = { ...s.toolUse };
   used.forEach((op) => (toolUse[op] += 1));

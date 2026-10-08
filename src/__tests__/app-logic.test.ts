@@ -21,6 +21,8 @@ import {
   applyRestoreResult,
   MockPurchaseService,
   NO_ENTITLEMENTS,
+  NoPurchaseService,
+  purchasesAvailable,
   REMOVE_ADS_PRODUCT_ID,
 } from '../services/purchases';
 import { loadJson, MemoryStorage, saveJson, STORAGE_KEYS } from '../services/storage';
@@ -29,6 +31,8 @@ import {
   EMPTY_STATS,
   favouriteTool,
   isSettings,
+  normaliseSettings,
+  normaliseStats,
   timerShown,
   isStats,
   localDay,
@@ -206,6 +210,11 @@ describe('statistics', () => {
   it('times a solve by active play, not time spent in the background', () => {
     const play = { ...solved.play, solvedAt: 600_000, activeMs: 45_000 };
     expect(recordSolve(EMPTY_STATS, solved.solution!, play, 600_000, '2026-09-29').fastestMs).toBe(45_000);
+  });
+
+  it('times a game saved before the clock existed by the wall clock, never as a falsely fast best', () => {
+    const play = { ...solved.play, solvedAt: 600_000, activeMs: 2_000, untimed: true };
+    expect(recordSolve(EMPTY_STATS, solved.solution!, play, 600_000, '2026-09-29').fastestMs).toBe(599_000);
   });
 
   it('builds and breaks day streaks', () => {
@@ -476,5 +485,39 @@ describe('message length', () => {
   it('the live readout fits two lines', () => {
     const st = forgedState;
     expect(readoutMessage(st, analyzeBench(st)).text.length).toBeLessThanOrEqual(MAX);
+  });
+});
+
+describe('recovering saved data', () => {
+  it('keeps every valid setting when one field is outdated', () => {
+    const saved = { ...DEFAULT_SETTINGS, sound: false, motion: 'reduced', level: 99, difficulty: 'impossible', showTimer: false };
+    const s = normaliseSettings(saved);
+    expect(s.sound).toBe(false);
+    expect(s.motion).toBe('reduced');
+    expect(s.showTimer).toBe(false);
+    expect(s.level).toBe(DEFAULT_SETTINGS.level);
+    expect(s.difficulty).toBe(DEFAULT_SETTINGS.difficulty);
+    expect(normaliseSettings(null)).toEqual(DEFAULT_SETTINGS);
+    expect(normaliseSettings('junk')).toEqual(DEFAULT_SETTINGS);
+  });
+
+  it('repairs missing or unreadable statistics instead of showing NaN', () => {
+    const st = normaliseStats({ version: 1, solved: 4, dealt: 'x', toolUse: { add: 2 }, lastSolveDay: 'yesterday' });
+    expect(st.solved).toBe(4);
+    expect(st.dealt).toBe(0);
+    expect(st.skipped).toBe(0);
+    expect(st.toolUse).toEqual({ add: 2, sub: 0, mul: 0, div: 0 });
+    expect(st.lastSolveDay).toBeNull();
+    expect(Object.values(st).some((v) => typeof v === 'number' && Number.isNaN(v))).toBe(false);
+  });
+});
+
+describe('purchase wiring', () => {
+  it('a build without a store offers no purchases', async () => {
+    const none = new NoPurchaseService();
+    expect(purchasesAvailable(none)).toBe(false);
+    expect(await none.getProducts()).toEqual([]);
+    expect((await none.purchase()).status).toBe('failed');
+    expect(purchasesAvailable(new MockPurchaseService())).toBe(true);
   });
 });

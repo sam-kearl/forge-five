@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
-import { StyleSheet, Switch, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { AccessibilityInfo, Platform, StyleSheet, Switch, Text, View } from 'react-native';
+import { purchasesAvailable } from '../services/purchases';
 import { useApp } from '../state/AppContext';
 import { timerShown, type MotionPreference } from '../state/model';
 import { Button, SectionLabel, Tap } from '../ui/controls';
@@ -14,9 +15,16 @@ const MOTION_OPTIONS: { value: MotionPreference; label: string }[] = [
 ];
 
 export default function Settings() {
-  const { settings, updateSettings, cue, resetStats, setTutorialCompleted } = useApp();
+  const { settings, updateSettings, cue, resetStats, setTutorialCompleted, services } = useApp();
   const [confirmReset, setConfirmReset] = useState(false);
   const [resetDone, setResetDone] = useState(false);
+
+  // The "tap again" confirmation expires after a few seconds, so a stray tap later can't erase anything.
+  useEffect(() => {
+    if (!confirmReset) return;
+    const t = setTimeout(() => setConfirmReset(false), 4000);
+    return () => clearTimeout(t);
+  }, [confirmReset]);
 
   return (
     <Screen title="Settings">
@@ -30,14 +38,17 @@ export default function Settings() {
             if (v) setTimeout(() => cue('tap'), 50);
           }}
         />
-        <ToggleRow
-          label="Vibration (haptics)"
-          value={settings.haptics}
-          onChange={(v) => {
-            updateSettings({ haptics: v });
-            if (v) setTimeout(() => cue(undefined, 'select'), 50);
-          }}
-        />
+        {/* Browsers have no haptics, so the switch is only offered on phones and tablets. */}
+        {Platform.OS !== 'web' && (
+          <ToggleRow
+            label="Vibration (haptics)"
+            value={settings.haptics}
+            onChange={(v) => {
+              updateSettings({ haptics: v });
+              if (v) setTimeout(() => cue(undefined, 'select'), 50);
+            }}
+          />
+        )}
       </View>
 
       <View style={styles.section}>
@@ -56,6 +67,7 @@ export default function Settings() {
                 key={o.value}
                 onPress={() => updateSettings({ motion: o.value })}
                 accessibilityLabel={o.label}
+                role="radio"
                 selected={on}
                 style={[styles.segItem, on && styles.segOn]}
               >
@@ -84,7 +96,9 @@ export default function Settings() {
 
       <View style={styles.section}>
         <SectionLabel>Grown-ups</SectionLabel>
-        <Button title="Parents: remove ads & restore" kind="secondary" icon="lock" onPress={() => router.push('/parents')} />
+        {purchasesAvailable(services.purchases) && (
+          <Button title="Parents: remove ads & restore" kind="secondary" icon="lock" onPress={() => router.push('/parents')} />
+        )}
         <Button title="Privacy" kind="ghost" onPress={() => router.push('/privacy')} />
         <Button title="About & credits" kind="ghost" onPress={() => router.push('/about')} />
       </View>
@@ -103,6 +117,7 @@ export default function Settings() {
             resetStats();
             setConfirmReset(false);
             setResetDone(true);
+            AccessibilityInfo.announceForAccessibility('Statistics reset.');
           }}
         />
       </View>
@@ -120,7 +135,7 @@ function ToggleRow({ label, value, onChange }: { label: string; value: boolean; 
         value={value}
         onValueChange={onChange}
         accessibilityLabel={label}
-        trackColor={{ true: palette.coolantDeep, false: palette.steelLine }}
+        trackColor={{ true: palette.coolantDeep, false: '#6B5A4E' }}
         thumbColor={value ? palette.coolant : palette.mist}
         {...({ activeThumbColor: palette.coolant } as object)}
       />

@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { Animated, Easing, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Animated, AppState, Easing, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { motion, palette, NATIVE_DRIVER } from './theme';
 
 /** Scale-and-fade in on mount. Instant when motion is reduced. */
@@ -40,6 +40,16 @@ export function useShake(reduce: boolean) {
   return { style: { transform: [{ translateX: x }] }, shake };
 }
 
+/** False while the app is in the background or the web page is hidden, so looping animations can rest. */
+export function useAppVisible() {
+  const [visible, setVisible] = useState(() => AppState.currentState !== 'background');
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (st) => setVisible(st !== 'background'));
+    return () => sub.remove();
+  }, []);
+  return visible;
+}
+
 /**
  * A value that runs 0 → 1 over `period` ms and repeats, for glows that
  * breathe or flicker (map it with an interpolation whose ends match). Holds
@@ -47,15 +57,16 @@ export function useShake(reduce: boolean) {
  */
 export function usePulse(reduce: boolean, period: number) {
   const v = useState(() => new Animated.Value(0))[0];
+  const visible = useAppVisible();
   useEffect(() => {
-    if (reduce) return;
+    if (reduce || !visible) return;
     const loop = Animated.loop(Animated.timing(v, { toValue: 1, duration: period, easing: Easing.linear, useNativeDriver: NATIVE_DRIVER }));
     loop.start();
     return () => {
       loop.stop();
       v.setValue(0);
     };
-  }, [reduce, period, v]);
+  }, [reduce, visible, period, v]);
   return v;
 }
 

@@ -73,6 +73,26 @@ export class MockPurchaseService implements PurchaseService {
   }
 }
 
+/**
+ * No store connected (store and web builds until a real provider is integrated).
+ * The app hides Remove ads and the Parents screen when this is in use.
+ */
+export class NoPurchaseService implements PurchaseService {
+  readonly provider = 'none';
+  async getProducts(): Promise<Product[]> {
+    return [];
+  }
+  async purchase(): Promise<PurchaseResult> {
+    return { status: 'failed', message: 'Purchases are not available in this version.' };
+  }
+  async restore(): Promise<RestoreResult> {
+    return { status: 'nothing-to-restore' };
+  }
+}
+
+/** Whether this build can sell or restore anything (and so shows the Parents screen). */
+export const purchasesAvailable = (p: PurchaseService) => p.provider !== 'none';
+
 // ---------------------------------------------------------------------------
 // Entitlements: the locally cached result of purchases (pure logic, tested).
 // ---------------------------------------------------------------------------

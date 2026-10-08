@@ -9,13 +9,14 @@ import {
   applyRestoreResult,
   MockPurchaseService,
   NO_ENTITLEMENTS,
+  NoPurchaseService,
   type Entitlements,
   type PurchaseResult,
   type PurchaseService,
   type RestoreResult,
 } from '../services/purchases';
 import { loadJson, saveJson, STORAGE_KEYS, type StorageService } from '../services/storage';
-import { DEFAULT_SETTINGS, EMPTY_STATS, isSettings, isStats, shouldReduceMotion, type Settings, type Stats } from './model';
+import { DEFAULT_SETTINGS, EMPTY_STATS, normaliseSettings, normaliseStats, shouldReduceMotion, type Settings, type Stats } from './model';
 
 export interface Services {
   storage: StorageService;
@@ -30,12 +31,17 @@ export interface Services {
  * never imports a concrete ad, purchase or storage provider.
  *
  * EXPO_PUBLIC_ADS=mock shows the placeholder ad frame during development.
+ * Purchases are simulated only in development and in builds made with
+ * EXPO_PUBLIC_PURCHASES=mock (the EAS development and preview profiles). Store
+ * and web builds have no purchase provider until a real one is integrated, and
+ * then the Parents screen and Remove ads are hidden.
  */
 export function createDefaultServices(): Services {
   return {
     storage: AsyncStorage,
     ads: process.env.EXPO_PUBLIC_ADS === 'mock' ? new MockAdService('fill') : new NoAdService(),
-    purchases: new MockPurchaseService({ latencyMs: 600 }),
+    purchases:
+      __DEV__ || process.env.EXPO_PUBLIC_PURCHASES === 'mock' ? new MockPurchaseService({ latencyMs: 600 }) : new NoPurchaseService(),
     sound: createExpoSound(),
     haptics: createExpoHaptics(),
   };
@@ -79,8 +85,8 @@ export function AppProvider({ children, services: injected }: { children: ReactN
     let alive = true;
     (async () => {
       const [s, st, e, t] = await Promise.all([
-        loadJson(services.storage, STORAGE_KEYS.settings, DEFAULT_SETTINGS, isSettings),
-        loadJson(services.storage, STORAGE_KEYS.stats, EMPTY_STATS, isStats),
+        loadJson<unknown>(services.storage, STORAGE_KEYS.settings, DEFAULT_SETTINGS).then(normaliseSettings),
+        loadJson<unknown>(services.storage, STORAGE_KEYS.stats, EMPTY_STATS).then(normaliseStats),
         loadJson<Entitlements>(
           services.storage,
           STORAGE_KEYS.entitlements,

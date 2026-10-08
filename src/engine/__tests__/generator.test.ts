@@ -9,6 +9,7 @@ import { createRng } from '../rng';
 import { solve } from '../solver';
 import { validateSolution } from '../validate';
 import { formatExpr } from '../format';
+import { configForLevel, difficultyFor, levelById } from '../levels';
 import { exprOf, mkSources, RULES } from './helpers';
 
 const C = INITIAL_CONFIG;
@@ -223,5 +224,20 @@ describe('safeguards', () => {
     expect(report.tier).toBeGreaterThan(0);
     expect(report.tier).toBeLessThan(3);
     expect(report.rejections['too-hard']).toBeGreaterThan(0);
+  });
+});
+
+describe('fallback labels', () => {
+  it('labels a last-resort puzzle by its measured solution count, not the requested difficulty', () => {
+    const base = configForLevel(1, 'hard');
+    // An impossible request (every target weighted out) forces the hand-made fallbacks.
+    const config = {
+      ...base,
+      generator: { ...base.generator, attemptsPerTier: 1 },
+      targetWeights: Object.fromEntries(Object.keys(base.targetWeights).map((k) => [k, 0])),
+    };
+    const { puzzle, report } = generatePuzzle({ seed: 3, config, level: 1, difficulty: 'hard' });
+    expect(report.tier).toBeGreaterThanOrEqual(2);
+    expect(puzzle.difficulty).toBe(difficultyFor(levelById(1), puzzle.metrics.distinctSolutions));
   });
 });
